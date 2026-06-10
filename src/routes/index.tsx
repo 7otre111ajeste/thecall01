@@ -143,7 +143,9 @@ function TheCallGame() {
     setWorld((w) => ({
       ...w,
       timeMinutes: w.timeMinutes + minutes,
-      dangerLevel: Math.min(100, w.dangerLevel + Math.floor(minutes / 5)),
+      dangerLevel: clamp(w.dangerLevel + Math.ceil(minutes / 3)),
+      playerStress: clamp(w.playerStress + Math.ceil(minutes / 4)),
+      claireConfiance: clamp(w.claireConfiance - Math.ceil(minutes / 8)),
     }));
     setMessages((m) => [
       ...m,
@@ -186,7 +188,9 @@ function TheCallGame() {
       ]);
       setWorld((w) => ({
         ...w,
-        claireConfiance: Math.min(100, w.claireConfiance + 2),
+        claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
+        playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
+        dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
       }));
     } catch (e) {
       console.error(e);
