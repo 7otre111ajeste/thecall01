@@ -463,3 +463,7 @@ function StartScreen({ onStart }: { onStart: () => void }) {
 function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
 }
+
+function clamp(n: number, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, n));
+}
