@@ -602,6 +602,45 @@ export function TheCallGame({
           </div>
         </div>
       )}
+
+      {exitPrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setExitPrompt(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-1 text-center text-sm font-semibold text-foreground">
+              {t("game.exit_title", lang)}
+            </p>
+            <p className="mb-4 text-center text-xs text-muted-foreground">
+              {t("game.exit_desc", lang)}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => confirmExit(true)}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                💾 {t("game.exit_save_quit", lang)}
+              </button>
+              <button
+                onClick={() => confirmExit(false)}
+                className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-accent"
+              >
+                {t("game.exit_quit", lang)}
+              </button>
+              <button
+                onClick={() => setExitPrompt(null)}
+                className="mt-1 rounded-md px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
+              >
+                {t("intro.cancel_btn", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
