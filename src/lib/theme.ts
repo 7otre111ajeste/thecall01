@@ -14,13 +14,19 @@ export function getTheme(): Theme {
 export function setTheme(theme: Theme) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, theme);
+  document.documentElement.dataset.theme = theme;
   window.dispatchEvent(new CustomEvent(EVENT));
 }
 
 export function useTheme(): [Theme, (t: Theme) => void] {
   const [theme, setLocal] = useState<Theme>(() => getTheme());
   useEffect(() => {
-    const onChange = () => setLocal(getTheme());
+    document.documentElement.dataset.theme = getTheme();
+    const onChange = () => {
+      const next = getTheme();
+      document.documentElement.dataset.theme = next;
+      setLocal(next);
+    };
     window.addEventListener(EVENT, onChange);
     return () => window.removeEventListener(EVENT, onChange);
   }, []);

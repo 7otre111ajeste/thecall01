@@ -173,3 +173,14 @@
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Light theme override for storyline screens that are hard-coded dark.
+   invert + hue-rotate keeps accent hues roughly intact while flipping
+   blacks↔whites. Images/videos are re-inverted so they look normal. */
+html[data-theme="light"] .storyline-themed {
+  filter: invert(1) hue-rotate(180deg);
+}
+html[data-theme="light"] .storyline-themed img,
+html[data-theme="light"] .storyline-themed video {
+  filter: invert(1) hue-rotate(180deg);
+}

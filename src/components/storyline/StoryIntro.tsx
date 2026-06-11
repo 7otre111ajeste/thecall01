@@ -64,7 +64,7 @@ export function StoryIntro({
 
   return (
     <div
-      className="relative flex min-h-screen flex-col items-center justify-center px-6 py-10 text-white"
+      className="storyline-themed relative flex min-h-screen flex-col items-center justify-center px-6 py-10 text-white"
       style={{
         background: `radial-gradient(ellipse at top, ${story.accent}33, #050505 60%), radial-gradient(ellipse at bottom, ${story.accent}11, transparent)`,
       }}
