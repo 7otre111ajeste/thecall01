@@ -33,9 +33,11 @@ function uid(): string {
 export function TheCallGame({
   mode,
   onExit,
+  onBackToIntro,
 }: {
   mode: NarrativeMode;
   onExit: () => void;
+  onBackToIntro: () => void;
 }) {
   const [lang] = useLang();
   const [world, setWorld] = useState<WorldState>(initialWorldState);
