@@ -68,6 +68,7 @@ export function TheCallGame({
   const [awaitingAi, setAwaitingAi] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [overwritePicker, setOverwritePicker] = useState<SaveSlot[] | null>(null);
+  const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
