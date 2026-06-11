@@ -33,9 +33,26 @@ export function StoryIntro({
   const [auto, setAuto] = useState<SaveSlot | null>(null);
   const [manual, setManual] = useState<SaveSlot[]>([]);
 
+  const [lang] = useLang();
+  const [showModes, setShowModes] = useState(false);
+  const [auto, setAuto] = useState<SaveSlot | null>(null);
+  const [manual, setManual] = useState<SaveSlot[]>([]);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+
   const refresh = () => {
     setAuto(getAutoSave(story.id));
     setManual(getManualSaves(story.id));
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "manual") {
+      deleteSave(pendingDelete.save.id);
+    } else {
+      clearAutoSave(story.id);
+    }
+    setPendingDelete(null);
+    refresh();
   };
 
   useEffect(() => {
