@@ -70,6 +70,7 @@ export function TheCallGame({
   const [overwritePicker, setOverwritePicker] = useState<{ saves: SaveSlot[]; name: string } | null>(null);
   const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
+  const pendingExitRef = useRef<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
