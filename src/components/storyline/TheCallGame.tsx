@@ -70,6 +70,7 @@ export function TheCallGame({
   const [overwritePicker, setOverwritePicker] = useState<{ saves: SaveSlot[]; name: string } | null>(null);
   const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
+  const pendingExitRef = useRef<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
@@ -164,6 +165,13 @@ export function TheCallGame({
     [scene.title, world.timeMinutes],
   );
 
+  const runPendingExit = useCallback(() => {
+    const target = pendingExitRef.current;
+    pendingExitRef.current = null;
+    if (target === "exit") onExit();
+    else if (target === "back") onBackToIntro();
+  }, [onExit, onBackToIntro]);
+
   const handleSaveGame = useCallback(() => {
     setNamePrompt(defaultSaveName());
   }, [defaultSaveName]);
@@ -176,13 +184,12 @@ export function TheCallGame({
       setNamePrompt(null);
       return;
     }
-    const res = saveManual({ storyId, mode, sceneId, world, messages, name });
+    saveManual({ storyId, mode, sceneId, world, messages, name });
     setNamePrompt(null);
-    if (res.ok) {
-      setSaveToast(t("game.saved", lang));
-      setTimeout(() => setSaveToast(null), 1800);
-    }
-  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang]);
+    setSaveToast(t("game.saved", lang));
+    setTimeout(() => setSaveToast(null), 1800);
+    if (pendingExitRef.current) runPendingExit();
+  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang, runPendingExit]);
 
   const handleOverwrite = useCallback(
     (slotId: string) => {
@@ -191,9 +198,21 @@ export function TheCallGame({
       setOverwritePicker(null);
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
+      if (pendingExitRef.current) runPendingExit();
     },
-    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang],
+    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang, runPendingExit],
   );
+
+  const cancelNamePrompt = useCallback(() => {
+    setNamePrompt(null);
+    pendingExitRef.current = null;
+  }, []);
+
+  const cancelOverwrite = useCallback(() => {
+    setOverwritePicker(null);
+    pendingExitRef.current = null;
+  }, []);
+
 
 
   const requestExit = useCallback(
@@ -211,31 +230,18 @@ export function TheCallGame({
   const confirmExit = useCallback(
     (save: boolean) => {
       const target = exitPrompt;
-      if (save) {
-        const existing = getManualSaves(storyId);
-        if (existing.length >= MAX_MANUAL_SAVES) {
-          // Overwrite the oldest manual save automatically when full at exit
-          const oldest = [...existing].sort((a, b) => a.savedAt - b.savedAt)[0];
-          if (oldest) {
-            overwriteManual(oldest.id, { storyId, mode, sceneId, world, messages });
-          }
-        } else {
-          saveManual({
-            storyId,
-            mode,
-            sceneId,
-            world,
-            messages,
-            name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-          });
-        }
-      }
       setExitPrompt(null);
+      if (save) {
+        pendingExitRef.current = target;
+        setNamePrompt(defaultSaveName());
+        return;
+      }
       if (target === "exit") onExit();
       else if (target === "back") onBackToIntro();
     },
-    [exitPrompt, storyId, mode, sceneId, world, messages, scene.title, onExit, onBackToIntro],
+    [exitPrompt, defaultSaveName, onExit, onBackToIntro],
   );
+
 
   const handleChoice = useCallback(
     (choiceId: string) => {
@@ -568,7 +574,7 @@ export function TheCallGame({
       {overwritePicker && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setOverwritePicker(null)}
+          onClick={cancelOverwrite}
         >
           <div
             className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
@@ -596,7 +602,7 @@ export function TheCallGame({
               ))}
             </div>
             <button
-              onClick={() => setOverwritePicker(null)}
+              onClick={cancelOverwrite}
               className="mt-4 w-full rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
             >
               {t("intro.cancel_btn", lang)}
@@ -647,7 +653,7 @@ export function TheCallGame({
       {namePrompt !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setNamePrompt(null)}
+          onClick={cancelNamePrompt}
         >
           <div
             className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
@@ -671,7 +677,7 @@ export function TheCallGame({
             />
             <div className="flex gap-2">
               <button
-                onClick={() => setNamePrompt(null)}
+                onClick={cancelNamePrompt}
                 className="flex-1 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
               >
                 {t("intro.cancel_btn", lang)}
