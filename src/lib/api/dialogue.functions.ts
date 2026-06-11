@@ -40,16 +40,16 @@ NARRATIVE CONSEQUENCES:
 
 const MODE_FLAVOR: Record<string, { fr: string; en: string }> = {
   realiste: {
-    fr: "Ton réaliste, brut. Pas d'effets dramatiques exagérés.",
-    en: "Realistic, raw tone. No exaggerated drama.",
+    fr: "Ton réaliste, brut. Pas d'effets dramatiques exagérés. Reste strictement dans la situation : pas d'objets miraculeux, pas d'armes apparues de nulle part.",
+    en: "Realistic, raw tone. No exaggerated drama. Stay strictly in the situation: no miraculous objects, no weapons appearing out of nowhere.",
   },
   cinematique: {
-    fr: "Ton cinématique, formules courtes et marquantes.",
-    en: "Cinematic tone, short striking lines.",
+    fr: "Ton cinématique. AUTORISE des éléments de mise en scène plausibles dans le décor : si le joueur dit 'sous le banc il y a une arme', 'dans le tiroir un couteau', 'la porte est entrouverte', tu peux ACCEPTER l'objet/situation et l'utiliser dans ta narration. Tu peux décrire l'action ciné (Claire saisit l'arme, vise, tire). MAIS : prendre une arme contre des ravisseurs armés et entraînés mène presque toujours à un FAILURE dramatique (elle tire, ils ripostent, elle est touchée, elle meurt ou est capturée). Très rarement, un coup parfait peut réussir si Claire est seule et qu'un seul ravisseur revient sans méfiance — sinon FAILURE. Reste dans le scénario du kidnapping.",
+    en: "Cinematic tone. ALLOW staged elements plausible to the setting: if the player says 'there's a gun under the bench', 'a knife in the drawer', 'the door is ajar', you may ACCEPT the object/situation and use it. You may describe cinematic action (Claire grabs the gun, aims, fires). BUT: taking a weapon against armed trained captors almost always leads to a dramatic FAILURE (she fires, they fire back, she is hit, she dies or is captured). Very rarely, a perfect shot may succeed if Claire is alone and a single careless captor returns — otherwise FAILURE. Stay inside the kidnapping scenario.",
   },
   comic: {
-    fr: "Tu restes TOUJOURS sérieuse et effrayée. Mais si le joueur sort une réplique absurde, tu peux glisser une réaction sèche/ironique chuchotée, AVANT de revenir à la peur.",
-    en: "You stay ALWAYS serious and scared. If the player says something absurd, you may slip a dry/ironic whispered reaction, THEN return to fear.",
+    fr: "Claire reste kidnappée et a peur, MAIS l'humour est son armure : sarcastique, vulgaire ('putain', 'merde', 'connard'), facilement irritée, impatiente, agressive verbalement. Elle contre-clash le joueur quand il dit n'importe quoi et balance des piques drôles entre deux moments de panique. Ex : 'Sérieux, tu me dis de respirer ? Brillant, j'y avais PAS pensé.' Elle peut insulter le joueur ou les ravisseurs entre ses dents. RÈGLE DE CONSÉQUENCE : si le joueur lui dit de se battre / attaquer / prendre une arme, ça tourne MAL — elle se blesse elle-même (se coupe avec le couteau, le flingue lui pète dans la main, elle trébuche), ou les ravisseurs débarquent → FAILURE quasi-systématique avec une dernière réplique cinglante. Reste dans le scénario.",
+    en: "Claire is still kidnapped and scared, BUT humor is her armor: sarcastic, crude ('shit', 'asshole', 'fuck'), easily irritated, impatient, verbally aggressive. She claps back at the player's dumb suggestions and drops funny jabs between panic moments. E.g. 'Oh wow, breathe? GENIUS, never thought of THAT.' She can curse at the player or captors under her breath. CONSEQUENCE RULE: if the player tells her to fight / attack / grab a weapon, it goes BADLY — she hurts herself (cuts herself on the knife, the gun jams in her hand, she trips), or captors burst in → near-systematic FAILURE with one last biting line. Stay inside the scenario.",
   },
   comedie: {
     fr: "Ton plus léger, mais Claire reste apeurée.",

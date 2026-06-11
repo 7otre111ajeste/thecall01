@@ -103,6 +103,16 @@ export const STRINGS: Dict = {
     fr: "3 sauvegardes max — laquelle écraser ?",
     en: "3 saves max — which one to overwrite?",
   },
+  "game.exit_title": {
+    fr: "Quitter la partie ?",
+    en: "Leave the game?",
+  },
+  "game.exit_desc": {
+    fr: "Voulez-vous sauvegarder avant de quitter ?",
+    en: "Do you want to save before leaving?",
+  },
+  "game.exit_save_quit": { fr: "Sauvegarder et quitter", en: "Save and quit" },
+  "game.exit_quit": { fr: "Quitter sans sauvegarder", en: "Quit without saving" },
 };
 
 export function t(key: keyof typeof STRINGS | string, lang: Lang): string {

@@ -68,6 +68,7 @@ export function TheCallGame({
   const [awaitingAi, setAwaitingAi] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
   const [overwritePicker, setOverwritePicker] = useState<SaveSlot[] | null>(null);
+  const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
@@ -191,6 +192,47 @@ export function TheCallGame({
       setTimeout(() => setSaveToast(null), 1800);
     },
     [storyId, mode, sceneId, world, messages, lang],
+  );
+
+  const requestExit = useCallback(
+    (target: "exit" | "back") => {
+      if (world.missionStatus !== "active" || messages.length === 0) {
+        if (target === "exit") onExit();
+        else onBackToIntro();
+        return;
+      }
+      setExitPrompt(target);
+    },
+    [world.missionStatus, messages.length, onExit, onBackToIntro],
+  );
+
+  const confirmExit = useCallback(
+    (save: boolean) => {
+      const target = exitPrompt;
+      if (save) {
+        const existing = getManualSaves(storyId);
+        if (existing.length >= MAX_MANUAL_SAVES) {
+          // Overwrite the oldest manual save automatically when full at exit
+          const oldest = [...existing].sort((a, b) => a.savedAt - b.savedAt)[0];
+          if (oldest) {
+            overwriteManual(oldest.id, { storyId, mode, sceneId, world, messages });
+          }
+        } else {
+          saveManual({
+            storyId,
+            mode,
+            sceneId,
+            world,
+            messages,
+            name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+          });
+        }
+      }
+      setExitPrompt(null);
+      if (target === "exit") onExit();
+      else if (target === "back") onBackToIntro();
+    },
+    [exitPrompt, storyId, mode, sceneId, world, messages, scene.title, onExit, onBackToIntro],
   );
 
   const handleChoice = useCallback(
@@ -381,7 +423,7 @@ export function TheCallGame({
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2 text-xs font-mono">
           <div className="flex items-center gap-2">
             <button
-              onClick={onExit}
+              onClick={() => requestExit("exit")}
               className="mr-2 rounded border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
               title={t("game.back_title", lang)}
             >
@@ -557,6 +599,45 @@ export function TheCallGame({
             >
               {t("intro.cancel_btn", lang)}
             </button>
+          </div>
+        </div>
+      )}
+
+      {exitPrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setExitPrompt(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-1 text-center text-sm font-semibold text-foreground">
+              {t("game.exit_title", lang)}
+            </p>
+            <p className="mb-4 text-center text-xs text-muted-foreground">
+              {t("game.exit_desc", lang)}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => confirmExit(true)}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+              >
+                💾 {t("game.exit_save_quit", lang)}
+              </button>
+              <button
+                onClick={() => confirmExit(false)}
+                className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-accent"
+              >
+                {t("game.exit_quit", lang)}
+              </button>
+              <button
+                onClick={() => setExitPrompt(null)}
+                className="mt-1 rounded-md px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
+              >
+                {t("intro.cancel_btn", lang)}
+              </button>
+            </div>
           </div>
         </div>
       )}
