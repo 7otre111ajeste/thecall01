@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { t, useLang } from "@/lib/i18n";
 import {
   getPlayCount,
   seedPlayCounts,
@@ -7,7 +8,10 @@ import {
   type StoryModule,
 } from "@/lib/storyline/stories";
 
+import { LangToggle } from "./LangToggle";
+
 export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void }) {
+  const [lang] = useLang();
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -18,78 +22,96 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
   }, []);
 
   return (
-    <div className="min-h-screen bg-black px-6 py-10 text-white">
-      <header className="mx-auto mb-12 max-w-3xl text-center">
-        <h1 className="text-3xl font-bold tracking-[0.3em]">STORYLINE</h1>
+    <div className="relative min-h-screen bg-black px-6 py-10 text-white">
+      <div className="absolute right-5 top-5 z-10">
+        <LangToggle />
+      </div>
+
+      <header className="mx-auto mb-10 max-w-2xl text-center">
+        <h1 className="text-2xl font-bold tracking-[0.4em]">STORYLINE</h1>
         <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.4em] text-white/40">
-          Choose your story
+          {t("menu.tagline", lang)}
         </p>
       </header>
 
-      <div className="mx-auto grid max-w-3xl gap-5">
+      <div className="mx-auto flex max-w-2xl flex-col gap-3">
         {STORIES.map((s) => (
-          <StoryCard key={s.id} story={s} onSelect={() => onSelect(s)} />
+          <StoryCard key={s.id} story={s} lang={lang} onSelect={() => onSelect(s)} />
         ))}
       </div>
 
-      <p className="mx-auto mt-12 max-w-3xl text-center font-mono text-[10px] uppercase tracking-widest text-white/30">
-        Plus d'histoires bientôt · STORYLINE v0.1
+      <p className="mx-auto mt-12 max-w-2xl text-center font-mono text-[10px] uppercase tracking-widest text-white/30">
+        {t("menu.footer", lang)}
       </p>
     </div>
   );
 }
 
-function StoryCard({ story, onSelect }: { story: StoryModule; onSelect: () => void }) {
+function StoryCard({
+  story,
+  lang,
+  onSelect,
+}: {
+  story: StoryModule;
+  lang: "fr" | "en";
+  onSelect: () => void;
+}) {
   const locked = story.status === "locked";
   const plays = getPlayCount(story.id);
+  const tagline = lang === "en" ? story.taglineEn : story.tagline;
+  const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
 
   return (
     <button
       onClick={onSelect}
-      className={`group relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br p-6 text-left transition-all hover:border-white/30 ${
-        locked ? "opacity-50 grayscale" : "hover:scale-[1.01]"
+      disabled={locked}
+      className={`group relative overflow-hidden rounded-lg border border-white/10 bg-[#0a0a0a] px-5 py-4 text-left transition-all ${
+        locked
+          ? "cursor-not-allowed opacity-40"
+          : "hover:-translate-y-px hover:border-white/25 hover:bg-[#101010]"
       }`}
-      style={{
-        backgroundImage: `radial-gradient(ellipse at top left, ${story.accent}22, transparent 60%), linear-gradient(135deg, #0a0a0a, #161616)`,
-      }}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div
-            className="mb-2 font-mono text-[10px] uppercase tracking-[0.3em]"
-            style={{ color: story.accent }}
-          >
-            {story.tagline}
-          </div>
-          <h3 className="text-2xl font-bold tracking-wider">{story.title}</h3>
-          <p className="mt-3 text-sm leading-relaxed text-white/60 line-clamp-2">
-            {story.synopsis}
-          </p>
-        </div>
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[2px]"
+        style={{ background: story.accent, opacity: locked ? 0.35 : 1 }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-[0.07] transition-opacity group-hover:opacity-[0.12]"
+        style={{ background: story.accent, filter: "blur(40px)" }}
+      />
+
+      <div className="flex items-baseline justify-between gap-3">
         <div
-          className="h-14 w-14 shrink-0 rounded-full border border-white/10"
-          style={{
-            background: `radial-gradient(circle at 30% 30%, ${story.accent}, transparent 70%)`,
-            boxShadow: locked ? "none" : `0 0 30px ${story.accent}55`,
-          }}
-        />
+          className="font-mono text-[9px] uppercase tracking-[0.35em]"
+          style={{ color: story.accent }}
+        >
+          {tagline}
+        </div>
+        <span className="font-mono text-[9px] uppercase tracking-widest text-white/35">
+          {plays.toLocaleString(lang === "en" ? "en-US" : "fr-FR")} {t("menu.plays", lang)}
+        </span>
       </div>
 
-      <div className="mt-5 flex items-center justify-between border-t border-white/5 pt-4">
+      <h3 className="mt-1.5 text-lg font-semibold tracking-[0.15em]">{story.title}</h3>
+      <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-white/55">{synopsis}</p>
+
+      <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2.5">
         {locked ? (
-          <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">
-            🔒 Bientôt disponible
+          <span className="font-mono text-[9px] uppercase tracking-widest text-white/35">
+            🔒 {t("menu.locked", lang)}
           </span>
         ) : (
           <span
-            className="font-mono text-[10px] uppercase tracking-widest"
+            className="font-mono text-[9px] uppercase tracking-widest"
             style={{ color: story.accent }}
           >
-            ▶ Disponible
+            ▶ {t("menu.available", lang)}
           </span>
         )}
-        <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">
-          {plays.toLocaleString("fr-FR")} parties
+        <span className="font-mono text-[10px] text-white/30 transition group-hover:text-white/60">
+          →
         </span>
       </div>
     </button>

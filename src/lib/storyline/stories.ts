@@ -1,4 +1,4 @@
-export type NarrativeMode = "realiste" | "comedie" | "cinematique" | "chaos";
+export type NarrativeMode = "realiste" | "comedie" | "cinematique" | "chaos" | "comic";
 
 export type StoryTheme = "thecall" | "business" | "survival";
 
@@ -6,10 +6,12 @@ export type StoryModule = {
   id: string;
   title: string;
   tagline: string;
+  taglineEn: string;
   synopsis: string;
+  synopsisEn: string;
   status: "active" | "locked";
   theme: StoryTheme;
-  accent: string; // CSS color for card glow
+  accent: string;
   modes: NarrativeMode[];
 };
 
@@ -18,19 +20,25 @@ export const STORIES: StoryModule[] = [
     id: "thecall",
     title: "THE CALL",
     tagline: "Thriller · Temps réel",
+    taglineEn: "Thriller · Real time",
     synopsis:
       "Une femme vous appelle par erreur. Elle est kidnappée et votre numéro est son seul lien avec l'extérieur.",
+    synopsisEn:
+      "A woman calls you by mistake. She's been kidnapped, and your number is her only link to the outside world.",
     status: "active",
     theme: "thecall",
     accent: "#e0392b",
-    modes: ["realiste", "cinematique"],
+    modes: ["realiste", "cinematique", "comic"],
   },
   {
     id: "survival",
     title: "SURVIVAL CRASH",
     tagline: "Survie · Nature hostile",
+    taglineEn: "Survival · Hostile wild",
     synopsis:
       "Le crash. La forêt. La nuit qui tombe. Quelqu'un, quelque part, capte votre signal.",
+    synopsisEn:
+      "The crash. The forest. Night falling. Someone, somewhere, picks up your signal.",
     status: "locked",
     theme: "survival",
     accent: "#2ecc71",
@@ -40,8 +48,11 @@ export const STORIES: StoryModule[] = [
     id: "business",
     title: "BUSINESS EMPIRE",
     tagline: "Corporate · Pouvoir & trahison",
+    taglineEn: "Corporate · Power & betrayal",
     synopsis:
       "Vous reprenez une multinationale au bord du gouffre. Chaque décision déplace des milliards.",
+    synopsisEn:
+      "You take over a multinational on the brink. Every decision moves billions.",
     status: "locked",
     theme: "business",
     accent: "#3b82f6",
@@ -54,6 +65,7 @@ export const NARRATIVE_MODE_LABELS: Record<NarrativeMode, string> = {
   comedie: "Comédie",
   cinematique: "Cinématique",
   chaos: "Chaos",
+  comic: "Comic",
 };
 
 export function getPlayCount(storyId: string): number {
@@ -69,7 +81,6 @@ export function incrementPlayCount(storyId: string): number {
   return n;
 }
 
-// Seed nice-looking play counts for ambiance
 export function seedPlayCounts() {
   if (typeof window === "undefined") return;
   const seeds: Record<string, number> = {
