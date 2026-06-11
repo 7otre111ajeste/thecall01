@@ -533,15 +533,22 @@ export function TheCallGame({
           ) : (
             <div className="flex flex-col gap-2">
               <div className="grid grid-cols-1 gap-2">
-                {scene.choices.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleChoice(c.id)}
-                    className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
-                  >
-                    {c.label}
-                  </button>
-                ))}
+                {scene.choices
+                  .filter((c) => {
+                    if (c.requiresFlag && !world.flags.includes(c.requiresFlag)) return false;
+                    if (c.blockedByFlag && world.flags.includes(c.blockedByFlag)) return false;
+                    if (isChoiceLocked(c.id, world.flags)) return false;
+                    return true;
+                  })
+                  .map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleChoice(c.id)}
+                      className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
+                    >
+                      {c.label}
+                    </button>
+                  ))}
               </div>
 
               {scene.allowFreeText && (
