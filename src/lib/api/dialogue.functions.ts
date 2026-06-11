@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "../ai-gateway.server";
@@ -116,20 +116,15 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       })
       .join("\n");
 
+    const outcomeInstr =
+      data.lang === "en"
+        ? `On the LAST line, append exactly one of: [OUT:CONTINUE] | [OUT:SUCCESS:<short 3rd-person narration>] | [OUT:FAILURE:<short 3rd-person narration>]. Use SUCCESS only if the player's directive plausibly leads to rescue right now. Use FAILURE only if it plausibly leads to death or capture right now. Otherwise CONTINUE.`
+        : `Sur la DERNIÈRE ligne, ajoute exactement un de ces marqueurs : [OUT:CONTINUE] | [OUT:SUCCESS:<courte narration 3e personne>] | [OUT:FAILURE:<courte narration 3e personne>]. SUCCESS seulement si la directive du joueur mène plausiblement au sauvetage maintenant. FAILURE seulement si elle mène à la mort/capture maintenant. Sinon CONTINUE.`;
+
     try {
-      const { experimental_output } = await generateText({
+      const result = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        system: `${base}\n\n${flavor}\n${langLine}`,
-        experimental_output: Output.object({
-          schema: z.object({
-            reply: z.string(),
-            trustDelta: z.number(),
-            stressDelta: z.number(),
-            dangerDelta: z.number(),
-            outcome: z.enum(["continue", "success", "failure"]),
-            outcomeNarration: z.string(),
-          }),
-        }),
+        system: `${base}\n\n${flavor}\n${langLine}\n\n${outcomeInstr}`,
         messages: [
           { role: "system", content: contextLine },
           {
@@ -140,25 +135,18 @@ export const generateClaireReply = createServerFn({ method: "POST" })
           },
           { role: "user", content: data.playerMessage },
         ],
-        maxOutputTokens: 400,
+        maxOutputTokens: 300,
       });
 
-      const out = experimental_output as {
-        reply: string;
-        trustDelta: number;
-        stressDelta: number;
-        dangerDelta: number;
-        outcome: "continue" | "success" | "failure";
-        outcomeNarration: string;
-      };
+      const raw = result.text || "";
+      const { reply, outcome, outcomeNarration } = parseOutcome(raw);
+      const deltas = inferDeltas(data.playerMessage, reply, data.dangerLevel, data.ravisseursPresents);
 
       return {
-        reply: cleanClaireReply(out.reply) || fallback(data.lang),
-        trustDelta: clampDelta(out.trustDelta, -15, 15),
-        stressDelta: clampDelta(out.stressDelta, -15, 20),
-        dangerDelta: clampDelta(out.dangerDelta, -15, 25),
-        outcome: out.outcome,
-        outcomeNarration: (out.outcomeNarration || "").slice(0, 400),
+        reply: cleanClaireReply(reply) || fallback(data.lang),
+        ...deltas,
+        outcome,
+        outcomeNarration: outcomeNarration.slice(0, 400),
       };
     } catch (err) {
       console.error("AI gateway error:", err);
@@ -172,6 +160,54 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       };
     }
   });
+
+function parseOutcome(text: string): {
+  reply: string;
+  outcome: "continue" | "success" | "failure";
+  outcomeNarration: string;
+} {
+  const re = /\[OUT:(CONTINUE|SUCCESS|FAILURE)(?::([^\]]*))?\]/i;
+  const m = text.match(re);
+  if (!m) return { reply: text, outcome: "continue", outcomeNarration: "" };
+  const reply = text.replace(re, "").trim();
+  const kind = m[1].toUpperCase();
+  const narration = (m[2] || "").trim();
+  if (kind === "SUCCESS") return { reply, outcome: "success", outcomeNarration: narration };
+  if (kind === "FAILURE") return { reply, outcome: "failure", outcomeNarration: narration };
+  return { reply, outcome: "continue", outcomeNarration: "" };
+}
+
+function inferDeltas(
+  playerText: string,
+  claireText: string,
+  dangerLevel: number,
+  ravisseursPresents: boolean,
+) {
+  const t = (playerText + " " + claireText).toLowerCase();
+  let trustDelta = 0;
+  let stressDelta = ravisseursPresents || dangerLevel > 75 ? 2 : 0;
+  let dangerDelta = 0;
+  if (/(respire|calme|courage|with you|breathe|calm|je suis là)/.test(t)) {
+    trustDelta += 5;
+    stressDelta -= 3;
+  }
+  if (/(décris|regard|écout|indice|describe|listen|look|clue)/.test(t)) {
+    trustDelta += 3;
+  }
+  if (/(crie|hurle|cours|frappe|scream|shout|run|hit|attack)/.test(t)) {
+    stressDelta += 6;
+    dangerDelta += ravisseursPresents ? 10 : 5;
+  }
+  if (/(raccroche|hang up|tais-toi|shut up)/.test(t)) {
+    trustDelta -= 6;
+    stressDelta += 5;
+  }
+  return {
+    trustDelta: Math.max(-15, Math.min(15, trustDelta)),
+    stressDelta: Math.max(-10, Math.min(15, stressDelta)),
+    dangerDelta: Math.max(-5, Math.min(20, dangerDelta)),
+  };
+}
 
 function cleanClaireReply(text: string) {
   return text
