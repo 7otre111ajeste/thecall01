@@ -42,21 +42,33 @@ export function TheCallGame({
   mode,
   onExit,
   onBackToIntro,
+  storyId,
+  initialSave,
 }: {
   mode: NarrativeMode;
   onExit: () => void;
   onBackToIntro: () => void;
+  storyId: string;
+  initialSave?: SaveSlot | null;
 }) {
   const [lang] = useLang();
-  const [world, setWorld] = useState<WorldState>(initialWorldState);
-  const [sceneId, setSceneId] = useState<string>(START_SCENE);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [world, setWorld] = useState<WorldState>(
+    initialSave?.world ?? initialWorldState,
+  );
+  const [sceneId, setSceneId] = useState<string>(
+    initialSave?.sceneId ?? START_SCENE,
+  );
+  const [messages, setMessages] = useState<Message[]>(
+    initialSave?.messages ?? [],
+  );
   const [typing, setTyping] = useState<Speaker | null>(null);
-  const [beatsDone, setBeatsDone] = useState(false);
+  const [beatsDone, setBeatsDone] = useState(!!initialSave);
   const [freeText, setFreeText] = useState("");
   const [awaitingAi, setAwaitingAi] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const skipNextBeatsRef = useRef<boolean>(!!initialSave);
   const callClaire = useServerFn(generateClaireReply);
 
   const scene = SCENES[sceneId];
