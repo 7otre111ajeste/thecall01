@@ -89,7 +89,7 @@ export function saveManual(
 
 export function overwriteManual(
   id: string,
-  data: Omit<SaveSlot, "id" | "savedAt" | "name" | "auto">,
+  data: Omit<SaveSlot, "id" | "savedAt" | "name" | "auto"> & { name?: string },
 ) {
   const all = readAll();
   const idx = all.findIndex((s) => s.id === id);
@@ -97,9 +97,11 @@ export function overwriteManual(
   all[idx] = {
     ...all[idx],
     ...data,
+    name: data.name ?? all[idx].name,
     savedAt: Date.now(),
   };
   writeAll(all);
 }
+
 
 export const MAX_MANUAL_SAVES = MAX_PER_STORY;

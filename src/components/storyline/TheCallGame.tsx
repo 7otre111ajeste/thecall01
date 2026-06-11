@@ -67,7 +67,8 @@ export function TheCallGame({
   const [freeText, setFreeText] = useState("");
   const [awaitingAi, setAwaitingAi] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
-  const [overwritePicker, setOverwritePicker] = useState<SaveSlot[] | null>(null);
+  const [overwritePicker, setOverwritePicker] = useState<{ saves: SaveSlot[]; name: string } | null>(null);
+  const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -158,41 +159,42 @@ export function TheCallGame({
     return () => clearTimeout(handle);
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
+  const defaultSaveName = useCallback(
+    () => `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+    [scene.title, world.timeMinutes],
+  );
+
   const handleSaveGame = useCallback(() => {
+    setNamePrompt(defaultSaveName());
+  }, [defaultSaveName]);
+
+  const handleConfirmName = useCallback(() => {
+    const name = (namePrompt ?? "").trim() || defaultSaveName();
     const existing = getManualSaves(storyId);
     if (existing.length >= MAX_MANUAL_SAVES) {
-      setOverwritePicker(existing);
+      setOverwritePicker({ saves: existing, name });
+      setNamePrompt(null);
       return;
     }
-    const res = saveManual({
-      storyId,
-      mode,
-      sceneId,
-      world,
-      messages,
-      name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-    });
+    const res = saveManual({ storyId, mode, sceneId, world, messages, name });
+    setNamePrompt(null);
     if (res.ok) {
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
     }
-  }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
+  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang]);
 
   const handleOverwrite = useCallback(
     (slotId: string) => {
-      overwriteManual(slotId, {
-        storyId,
-        mode,
-        sceneId,
-        world,
-        messages,
-      });
+      const name = overwritePicker?.name ?? defaultSaveName();
+      overwriteManual(slotId, { storyId, mode, sceneId, world, messages, name });
       setOverwritePicker(null);
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
     },
-    [storyId, mode, sceneId, world, messages, lang],
+    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang],
   );
+
 
   const requestExit = useCallback(
     (target: "exit" | "back") => {
@@ -576,7 +578,7 @@ export function TheCallGame({
               {t("game.overwrite_title", lang)}
             </p>
             <div className="flex flex-col gap-2">
-              {overwritePicker.map((s) => (
+              {overwritePicker.saves.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => handleOverwrite(s.id)}
@@ -636,6 +638,49 @@ export function TheCallGame({
                 className="mt-1 rounded-md px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
               >
                 {t("intro.cancel_btn", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {namePrompt !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setNamePrompt(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-1 text-center text-sm font-semibold text-foreground">
+              {t("game.name_save_title", lang)}
+            </p>
+            <p className="mb-3 text-center text-xs text-muted-foreground">
+              {t("game.name_save_desc", lang)}
+            </p>
+            <input
+              autoFocus
+              value={namePrompt}
+              onChange={(e) => setNamePrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmName();
+              }}
+              maxLength={60}
+              className="mb-4 w-full rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setNamePrompt(null)}
+                className="flex-1 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
+              >
+                {t("intro.cancel_btn", lang)}
+              </button>
+              <button
+                onClick={handleConfirmName}
+                className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground hover:opacity-90"
+              >
+                💾 {t("game.save_btn", lang)}
               </button>
             </div>
           </div>
