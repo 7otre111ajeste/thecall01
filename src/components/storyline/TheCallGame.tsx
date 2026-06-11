@@ -9,7 +9,10 @@ import {
   type Speaker,
   type WorldState,
 } from "@/lib/game/types";
+import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
+
+import { LangToggle } from "./LangToggle";
 
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
@@ -34,6 +37,7 @@ export function TheCallGame({
   mode: NarrativeMode;
   onExit: () => void;
 }) {
+  const [lang] = useLang();
   const [world, setWorld] = useState<WorldState>(initialWorldState);
   const [sceneId, setSceneId] = useState<string>(START_SCENE);
   const [messages, setMessages] = useState<Message[]>([]);
