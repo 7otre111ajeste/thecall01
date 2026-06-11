@@ -36,8 +36,8 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
         <ThemeToggle />
       </div>
 
-      <header className="mx-auto mb-10 max-w-2xl text-center">
-        <h1 className="text-4xl font-bold tracking-[0.25em]">MY STORYLINE</h1>
+      <header className="mx-auto mb-10 max-w-2xl pt-10 text-center sm:pt-0">
+        <h1 className="text-2xl font-bold tracking-[0.25em] sm:text-4xl">MY STORYLINE</h1>
         <p
           className={`mt-2 font-mono text-[8px] uppercase tracking-[0.4em] ${
             isDark ? "text-white/25" : "text-black/40"
