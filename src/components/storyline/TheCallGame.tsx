@@ -487,7 +487,18 @@ export function TheCallGame({
                     {opt.label}
                   </button>
                 ))}
+                <button
+                  onClick={handleSaveGame}
+                  className="ml-auto rounded border border-primary/60 bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
+                >
+                  💾 {t("game.save", lang)}
+                </button>
               </div>
+              {saveToast && (
+                <p className="text-center text-[11px] text-muted-foreground">
+                  {saveToast}
+                </p>
+              )}
             </div>
           )}
         </div>
