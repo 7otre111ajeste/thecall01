@@ -235,7 +235,7 @@ export function TheCallGame({
     [exitPrompt, storyId, mode, sceneId, world, messages, scene.title, onExit, onBackToIntro],
   );
 
-
+  const handleChoice = useCallback(
     (choiceId: string) => {
       const choice = scene.choices.find((c) => c.id === choiceId);
       if (!choice) return;
