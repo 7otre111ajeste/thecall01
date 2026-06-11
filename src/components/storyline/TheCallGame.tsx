@@ -165,6 +165,13 @@ export function TheCallGame({
     [scene.title, world.timeMinutes],
   );
 
+  const runPendingExit = useCallback(() => {
+    const target = pendingExitRef.current;
+    pendingExitRef.current = null;
+    if (target === "exit") onExit();
+    else if (target === "back") onBackToIntro();
+  }, [onExit, onBackToIntro]);
+
   const handleSaveGame = useCallback(() => {
     setNamePrompt(defaultSaveName());
   }, [defaultSaveName]);
@@ -177,13 +184,12 @@ export function TheCallGame({
       setNamePrompt(null);
       return;
     }
-    const res = saveManual({ storyId, mode, sceneId, world, messages, name });
+    saveManual({ storyId, mode, sceneId, world, messages, name });
     setNamePrompt(null);
-    if (res.ok) {
-      setSaveToast(t("game.saved", lang));
-      setTimeout(() => setSaveToast(null), 1800);
-    }
-  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang]);
+    setSaveToast(t("game.saved", lang));
+    setTimeout(() => setSaveToast(null), 1800);
+    if (pendingExitRef.current) runPendingExit();
+  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang, runPendingExit]);
 
   const handleOverwrite = useCallback(
     (slotId: string) => {
@@ -192,9 +198,21 @@ export function TheCallGame({
       setOverwritePicker(null);
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
+      if (pendingExitRef.current) runPendingExit();
     },
-    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang],
+    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang, runPendingExit],
   );
+
+  const cancelNamePrompt = useCallback(() => {
+    setNamePrompt(null);
+    pendingExitRef.current = null;
+  }, []);
+
+  const cancelOverwrite = useCallback(() => {
+    setOverwritePicker(null);
+    pendingExitRef.current = null;
+  }, []);
+
 
 
   const requestExit = useCallback(
