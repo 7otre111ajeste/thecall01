@@ -2,6 +2,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { generateClaireReply } from "@/lib/api/dialogue.functions";
+import {
+  clearAutoSave,
+  getManualSaves,
+  MAX_MANUAL_SAVES,
+  type SaveSlot,
+  saveManual,
+  upsertAutoSave,
+} from "@/lib/game/saves";
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
@@ -34,31 +42,49 @@ export function TheCallGame({
   mode,
   onExit,
   onBackToIntro,
+  storyId,
+  initialSave,
 }: {
   mode: NarrativeMode;
   onExit: () => void;
   onBackToIntro: () => void;
+  storyId: string;
+  initialSave?: SaveSlot | null;
 }) {
   const [lang] = useLang();
-  const [world, setWorld] = useState<WorldState>(initialWorldState);
-  const [sceneId, setSceneId] = useState<string>(START_SCENE);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [world, setWorld] = useState<WorldState>(
+    initialSave?.world ?? initialWorldState,
+  );
+  const [sceneId, setSceneId] = useState<string>(
+    initialSave?.sceneId ?? START_SCENE,
+  );
+  const [messages, setMessages] = useState<Message[]>(
+    initialSave?.messages ?? [],
+  );
   const [typing, setTyping] = useState<Speaker | null>(null);
-  const [beatsDone, setBeatsDone] = useState(false);
+  const [beatsDone, setBeatsDone] = useState(!!initialSave);
   const [freeText, setFreeText] = useState("");
   const [awaitingAi, setAwaitingAi] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const skipNextBeatsRef = useRef<boolean>(!!initialSave);
   const callClaire = useServerFn(generateClaireReply);
 
   const scene = SCENES[sceneId];
 
   useEffect(() => {
-    setBeatsDone(false);
+    setBeatsDone(skipNextBeatsRef.current);
 
-    if (scene.onEnter) {
+    if (scene.onEnter && !skipNextBeatsRef.current) {
       setWorld((w) => ({ ...w, ...scene.onEnter }));
     }
+
+    if (skipNextBeatsRef.current) {
+      skipNextBeatsRef.current = false;
+      return;
+    }
+
 
     let cancelled = false;
     const runId = Math.random();
@@ -115,6 +141,40 @@ export function TheCallGame({
       behavior: "smooth",
     });
   }, [messages, typing]);
+
+  // Autosave on every meaningful state change (debounced)
+  useEffect(() => {
+    if (!beatsDone) return;
+    const handle = setTimeout(() => {
+      if (world.missionStatus === "active") {
+        upsertAutoSave({ storyId, mode, sceneId, world, messages });
+      } else {
+        clearAutoSave(storyId);
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [world, sceneId, messages, mode, storyId, beatsDone]);
+
+  const handleSaveGame = useCallback(() => {
+    const existing = getManualSaves(storyId);
+    if (existing.length >= MAX_MANUAL_SAVES) {
+      setSaveToast(t("game.save_full", lang));
+      setTimeout(() => setSaveToast(null), 2200);
+      return;
+    }
+    const res = saveManual({
+      storyId,
+      mode,
+      sceneId,
+      world,
+      messages,
+      name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+    });
+    if (res.ok) {
+      setSaveToast(t("game.saved", lang));
+      setTimeout(() => setSaveToast(null), 1800);
+    }
+  }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
 
   const handleChoice = useCallback(
     (choiceId: string) => {
@@ -427,7 +487,18 @@ export function TheCallGame({
                     {opt.label}
                   </button>
                 ))}
+                <button
+                  onClick={handleSaveGame}
+                  className="ml-auto rounded border border-primary/60 bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20"
+                >
+                  💾 {t("game.save", lang)}
+                </button>
               </div>
+              {saveToast && (
+                <p className="text-center text-[11px] text-muted-foreground">
+                  {saveToast}
+                </p>
+              )}
             </div>
           )}
         </div>

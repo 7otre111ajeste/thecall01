@@ -77,6 +77,18 @@ export const STRINGS: Dict = {
   "game.network_error": { fr: "⚠ Coupure réseau. Réessayez.", en: "⚠ Network error. Try again." },
   "game.time_elapsed_one": { fr: "minute écoulée...", en: "minute elapsed..." },
   "game.time_elapsed_many": { fr: "minutes écoulées...", en: "minutes elapsed..." },
+  "game.save": { fr: "Sauvegarder", en: "Save" },
+  "game.saved": { fr: "✓ Partie sauvegardée", en: "✓ Game saved" },
+  "game.save_full": {
+    fr: "3 sauvegardes max. Supprimez-en une.",
+    en: "3 saves max. Delete one first.",
+  },
+  "intro.continue": { fr: "Continuer la partie", en: "Continue game" },
+  "intro.saves": { fr: "Vos sauvegardes", en: "Your saves" },
+  "intro.no_saves": { fr: "Aucune sauvegarde", en: "No saves yet" },
+  "intro.load": { fr: "Charger", en: "Load" },
+  "intro.delete": { fr: "Supprimer", en: "Delete" },
+  "intro.new_game": { fr: "Nouvelle partie", en: "New game" },
 };
 
 export function t(key: keyof typeof STRINGS | string, lang: Lang): string {

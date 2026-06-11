@@ -1,5 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import {
+  deleteSave,
+  getAutoSave,
+  getManualSaves,
+  type SaveSlot,
+} from "@/lib/game/saves";
 import { t, useLang } from "@/lib/i18n";
 import { type NarrativeMode, type StoryModule } from "@/lib/storyline/stories";
 
@@ -9,13 +15,31 @@ export function StoryIntro({
   story,
   onStart,
   onBack,
+  onResume,
 }: {
   story: StoryModule;
   onStart: (mode: NarrativeMode) => void;
   onBack: () => void;
+  onResume: (save: SaveSlot) => void;
 }) {
   const [lang] = useLang();
   const [showModes, setShowModes] = useState(false);
+  const [auto, setAuto] = useState<SaveSlot | null>(null);
+  const [manual, setManual] = useState<SaveSlot[]>([]);
+
+  const refresh = () => {
+    setAuto(getAutoSave(story.id));
+    setManual(getManualSaves(story.id));
+  };
+
+  useEffect(() => {
+    refresh();
+    const onChange = () => refresh();
+    window.addEventListener("storyline:saves-change", onChange);
+    return () => window.removeEventListener("storyline:saves-change", onChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story.id]);
+
   const tagline = lang === "en" ? story.taglineEn : story.tagline;
   const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
   const locked = story.status === "locked";
@@ -38,10 +62,23 @@ export function StoryIntro({
           {tagline}
         </div>
         <h1 className="mb-6 text-6xl font-bold tracking-wider">{story.title}</h1>
-        <p className="mb-10 text-base leading-relaxed text-white/70">{synopsis}</p>
+        <p className="mb-8 text-base leading-relaxed text-white/70">{synopsis}</p>
+
+        {!locked && auto && (
+          <button
+            onClick={() => onResume(auto)}
+            className="mb-3 w-full rounded-md border-2 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:opacity-90"
+            style={{
+              borderColor: story.accent,
+              backgroundColor: `${story.accent}22`,
+            }}
+          >
+            ▶ {t("intro.continue", lang)}
+          </button>
+        )}
 
         <p
-          className="mb-8 font-mono text-sm uppercase tracking-[0.3em]"
+          className="mb-6 font-mono text-sm uppercase tracking-[0.3em]"
           style={{ color: story.accent }}
         >
           {t("intro.ready", lang)}
@@ -62,7 +99,11 @@ export function StoryIntro({
                 color: locked ? "rgba(255,255,255,0.4)" : "white",
               }}
             >
-              {locked ? `🔒 ${t("menu.locked", lang)}` : t("intro.start", lang)}
+              {locked
+                ? `🔒 ${t("menu.locked", lang)}`
+                : auto
+                  ? t("intro.new_game", lang)
+                  : t("intro.start", lang)}
             </button>
             {locked && (
               <p className="text-[11px] uppercase tracking-widest text-white/40">
@@ -107,6 +148,59 @@ export function StoryIntro({
             >
               {t("intro.cancel", lang)}
             </button>
+          </div>
+        )}
+
+        {!locked && (
+          <div className="mt-10 border-t border-white/10 pt-6 text-left">
+            <p
+              className="mb-3 text-center font-mono text-[10px] uppercase tracking-[0.3em]"
+              style={{ color: story.accent }}
+            >
+              {t("intro.saves", lang)} ({manual.length}/3)
+            </p>
+            {manual.length === 0 ? (
+              <p className="text-center text-xs italic text-white/40">
+                {t("intro.no_saves", lang)}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {manual.map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-white/80">{s.name}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-white/40">
+                        {s.mode} ·{" "}
+                        {new Date(s.savedAt).toLocaleString(
+                          lang === "en" ? "en-US" : "fr-FR",
+                          { dateStyle: "short", timeStyle: "short" },
+                        )}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => onResume(s)}
+                      className="rounded border px-2 py-1 text-[10px] uppercase tracking-widest hover:bg-white/10"
+                      style={{ borderColor: story.accent, color: story.accent }}
+                    >
+                      {t("intro.load", lang)}
+                    </button>
+                    <button
+                      onClick={() => {
+                        deleteSave(s.id);
+                        refresh();
+                      }}
+                      className="rounded border border-white/20 px-2 py-1 text-[10px] uppercase tracking-widest text-white/60 hover:bg-white/10"
+                      title={t("intro.delete", lang)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

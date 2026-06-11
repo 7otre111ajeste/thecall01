@@ -5,6 +5,7 @@ import { HomeMenu } from "@/components/storyline/HomeMenu";
 import { Opening } from "@/components/storyline/Opening";
 import { StoryIntro } from "@/components/storyline/StoryIntro";
 import { TheCallGame } from "@/components/storyline/TheCallGame";
+import type { SaveSlot } from "@/lib/game/saves";
 import {
   incrementPlayCount,
   type NarrativeMode,
@@ -34,7 +35,12 @@ type Stage =
   | { kind: "opening" }
   | { kind: "home" }
   | { kind: "intro"; story: StoryModule }
-  | { kind: "playing"; story: StoryModule; mode: NarrativeMode };
+  | {
+      kind: "playing";
+      story: StoryModule;
+      mode: NarrativeMode;
+      save?: SaveSlot | null;
+    };
 
 function StorylineApp() {
   const [stage, setStage] = useState<Stage>({ kind: "opening" });
@@ -57,6 +63,14 @@ function StorylineApp() {
           incrementPlayCount(stage.story.id);
           setStage({ kind: "playing", story: stage.story, mode });
         }}
+        onResume={(save) => {
+          setStage({
+            kind: "playing",
+            story: stage.story,
+            mode: save.mode,
+            save,
+          });
+        }}
       />
     );
   }
@@ -65,6 +79,8 @@ function StorylineApp() {
     return (
       <TheCallGame
         mode={stage.mode}
+        storyId={stage.story.id}
+        initialSave={stage.save ?? null}
         onExit={() => setStage({ kind: "home" })}
         onBackToIntro={() => setStage({ kind: "intro", story: stage.story })}
       />
