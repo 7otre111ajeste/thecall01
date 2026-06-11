@@ -18,46 +18,7 @@ export function StoryIntro({
   const [showModes, setShowModes] = useState(false);
   const tagline = lang === "en" ? story.taglineEn : story.tagline;
   const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
-
-  if (story.status === "locked") {
-    return (
-      <div
-        className="relative flex min-h-screen flex-col items-center justify-center px-6 text-white"
-        style={{
-          background: `radial-gradient(ellipse at center, ${story.accent}22, #050505 70%)`,
-        }}
-      >
-        <div className="absolute right-5 top-5 z-10">
-          <LangToggle />
-        </div>
-        <div className="max-w-md text-center">
-          <div
-            className="mb-3 font-mono text-[10px] uppercase tracking-[0.4em]"
-            style={{ color: story.accent }}
-          >
-            {tagline}
-          </div>
-          <h1 className="mb-6 text-5xl font-bold tracking-wider">{story.title}</h1>
-          <p className="mb-8 text-sm leading-relaxed text-white/60">{synopsis}</p>
-          <div
-            className="mb-8 rounded-lg border p-6"
-            style={{ borderColor: `${story.accent}44`, backgroundColor: `${story.accent}11` }}
-          >
-            <p className="text-sm" style={{ color: story.accent }}>
-              🔒 {t("intro.locked_title", lang)}
-            </p>
-            <p className="mt-2 text-xs text-white/50">{t("intro.locked_sub", lang)}</p>
-          </div>
-          <button
-            onClick={onBack}
-            className="rounded-md border border-white/20 px-6 py-3 text-sm uppercase tracking-widest text-white/70 hover:bg-white/5"
-          >
-            {t("intro.back", lang)}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const locked = story.status === "locked";
 
   return (
     <div
