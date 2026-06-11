@@ -87,8 +87,8 @@ function StoryCard({
   const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
 
   const cardCls = isDark
-    ? "border-white/10 bg-[#0a0a0a] hover:border-white/25 hover:bg-[#101010]"
-    : "border-black/10 bg-white hover:border-black/25 hover:bg-[#fafafa]";
+    ? "border-white/10 hover:border-white/25"
+    : "border-black/10 hover:border-black/25";
   const plays_cls = isDark ? "text-white/35" : "text-black/45";
   const synopsis_cls = isDark ? "text-white/55" : "text-black/65";
   const border_t_cls = isDark ? "border-white/5" : "border-black/5";
@@ -96,13 +96,19 @@ function StoryCard({
     ? "text-white/30 group-hover:text-white/60"
     : "text-black/30 group-hover:text-black/60";
 
+  const baseBg = isDark ? "#0a0a0a" : "#ffffff";
+  const accentAlpha = isDark ? "2e" : "26"; // ~18% / 15%
+  const cardBg = `linear-gradient(180deg, ${story.accent}${accentAlpha} 0%, ${baseBg} 85%)`;
+
   return (
     <button
       onClick={onSelect}
       className={`group relative overflow-hidden rounded-lg border px-5 py-4 text-left transition-all hover:-translate-y-px ${cardCls} ${
         locked ? "opacity-80" : ""
       }`}
+      style={{ background: cardBg }}
     >
+
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-[2px]"
