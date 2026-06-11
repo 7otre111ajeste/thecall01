@@ -2,6 +2,14 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { generateClaireReply } from "@/lib/api/dialogue.functions";
+import {
+  clearAutoSave,
+  getManualSaves,
+  MAX_MANUAL_SAVES,
+  type SaveSlot,
+  saveManual,
+  upsertAutoSave,
+} from "@/lib/game/saves";
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
