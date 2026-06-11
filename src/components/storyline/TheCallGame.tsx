@@ -52,8 +52,6 @@ export function TheCallGame({
   const scene = SCENES[sceneId];
 
   useEffect(() => {
-    if (enteredRef.current === sceneId) return;
-    enteredRef.current = sceneId;
     setBeatsDone(false);
 
     if (scene.onEnter) {
@@ -61,34 +59,44 @@ export function TheCallGame({
     }
 
     let cancelled = false;
+    const runId = Math.random();
+    enteredRef.current = sceneId + ":" + runId;
+    const myToken = enteredRef.current;
+
     (async () => {
       for (const beat of scene.beats) {
-        if (cancelled) return;
+        if (cancelled || enteredRef.current !== myToken) return;
         const delay = beat.delayMs ?? 600;
         if (beat.speaker === "claire" || beat.speaker === "unknown") {
           setTyping(beat.speaker);
           await sleep(delay);
-          if (cancelled) return;
+          if (cancelled || enteredRef.current !== myToken) return;
           setTyping(null);
         } else {
           await sleep(delay);
-          if (cancelled) return;
+          if (cancelled || enteredRef.current !== myToken) return;
         }
-        setMessages((m) => [
-          ...m,
-          {
-            id: uid(),
-            speaker: beat.speaker,
-            text: beat.text,
-            timestamp: world.timeMinutes,
-          },
-        ]);
+        setMessages((m) => {
+          // dedupe: avoid double-append from strict-mode remount
+          if (m.some((x) => x.speaker === beat.speaker && x.text === beat.text)) {
+            return m;
+          }
+          return [
+            ...m,
+            {
+              id: uid(),
+              speaker: beat.speaker,
+              text: beat.text,
+              timestamp: world.timeMinutes,
+            },
+          ];
+        });
       }
-      if (cancelled) return;
+      if (cancelled || enteredRef.current !== myToken) return;
       setBeatsDone(true);
       if (scene.autoAdvance) {
         await sleep(scene.autoAdvance.delayMs);
-        if (cancelled) return;
+        if (cancelled || enteredRef.current !== myToken) return;
         setSceneId(scene.autoAdvance.nextScene);
       }
     })();
