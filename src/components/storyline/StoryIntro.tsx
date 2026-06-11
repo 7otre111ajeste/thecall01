@@ -32,11 +32,6 @@ export function StoryIntro({
   const [showModes, setShowModes] = useState(false);
   const [auto, setAuto] = useState<SaveSlot | null>(null);
   const [manual, setManual] = useState<SaveSlot[]>([]);
-
-  const [lang] = useLang();
-  const [showModes, setShowModes] = useState(false);
-  const [auto, setAuto] = useState<SaveSlot | null>(null);
-  const [manual, setManual] = useState<SaveSlot[]>([]);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
 
   const refresh = () => {
