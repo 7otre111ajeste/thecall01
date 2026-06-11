@@ -30,7 +30,7 @@ export function useLang(): [Lang, (l: Lang) => void] {
 type Dict = Record<string, { fr: string; en: string }>;
 
 export const STRINGS: Dict = {
-  "menu.tagline": { fr: "Votre histoire. Vos choix.", en: "Your story. Your choices." },
+  "menu.tagline": { fr: "Vos choix. Votre histoire.", en: "Your choices. Your story." },
   "menu.footer": {
     fr: "Plus d'histoires bientôt · STORYLINE v0.1\nBy 7otre111ajeste",
     en: "More stories coming soon · STORYLINE v0.1\nBy 7otre111ajeste",
