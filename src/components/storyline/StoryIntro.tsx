@@ -216,10 +216,9 @@ export function StoryIntro({
                       {t("intro.load", lang)}
                     </button>
                     <button
-                      onClick={() => {
-                        deleteSave(s.id);
-                        refresh();
-                      }}
+                      onClick={() =>
+                        setPendingDelete({ kind: "manual", save: s })
+                      }
                       className="rounded border border-white/20 px-2 py-1 text-[10px] uppercase tracking-widest text-white/60 hover:bg-white/10"
                       title={t("intro.delete", lang)}
                     >
@@ -232,6 +231,44 @@ export function StoryIntro({
           </div>
         )}
       </div>
+
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setPendingDelete(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-white/15 bg-[#0a0a0a] p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-2 text-sm font-semibold text-white">
+              {t("intro.confirm_delete_title", lang)}
+            </p>
+            <p className="mb-1 text-xs text-white/60">
+              {pendingDelete.kind === "manual"
+                ? pendingDelete.save.name
+                : t("intro.continue", lang)}
+            </p>
+            <p className="mb-5 text-[11px] uppercase tracking-widest text-white/40">
+              {t("intro.confirm_delete_desc", lang)}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingDelete(null)}
+                className="flex-1 rounded-md border border-white/20 px-3 py-2 text-xs uppercase tracking-widest text-white/70 hover:bg-white/5"
+              >
+                {t("intro.cancel_btn", lang)}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 rounded-md bg-red-600 px-3 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-red-500"
+              >
+                {t("intro.confirm", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
