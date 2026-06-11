@@ -74,11 +74,17 @@ export function TheCallGame({
   const scene = SCENES[sceneId];
 
   useEffect(() => {
-    setBeatsDone(false);
+    setBeatsDone(skipNextBeatsRef.current);
 
-    if (scene.onEnter) {
+    if (scene.onEnter && !skipNextBeatsRef.current) {
       setWorld((w) => ({ ...w, ...scene.onEnter }));
     }
+
+    if (skipNextBeatsRef.current) {
+      skipNextBeatsRef.current = false;
+      return;
+    }
+
 
     let cancelled = false;
     const runId = Math.random();
