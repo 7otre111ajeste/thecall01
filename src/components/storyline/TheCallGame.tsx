@@ -382,51 +382,59 @@ export function TheCallGame({
       ]);
 
       const flagsAdded = res.flagsAdded ?? [];
-      // Compute next world (stats + flags), then derive a subtle hint + possible ending.
-      setWorld((w) => {
-        const merged = Array.from(new Set([...w.flags, ...flagsAdded]));
-        const next: WorldState = {
-          ...w,
-          flags: merged,
-          claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
-          playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
-          dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
-        };
 
-        // Subtle hint (one at a time).
-        const hint = pickHint(next, flagsAdded, lang);
-        if (hint) {
-          next.hintsShown = [...next.hintsShown, hint.id];
-          setTimeout(() => {
-            setMessages((m) => [
-              ...m,
-              { id: uid(), speaker: "narrator", text: hint.text, timestamp: next.timeMinutes },
-            ]);
-          }, 250);
-        }
+      // Compute next world (stats + flags) directly — keep setWorld pure (no setTimeout inside).
+      const mergedFlags = Array.from(new Set([...world.flags, ...flagsAdded]));
+      const nextWorld: WorldState = {
+        ...world,
+        flags: mergedFlags,
+        claireConfiance: clamp(world.claireConfiance + (res.trustDelta ?? 0)),
+        playerStress: clamp(world.playerStress + (res.stressDelta ?? 0)),
+        dangerLevel: clamp(world.dangerLevel + (res.dangerDelta ?? 0)),
+      };
 
-        // Outcome resolution — pick a flavored variant.
-        if (res.outcome === "success" || res.outcome === "failure") {
-          const variant = pickEnding(next, merged, res.outcome);
-          const narration = (res.outcomeNarration?.trim()) || variant.narration[lang];
-          const endTag =
-            res.outcome === "success"
-              ? lang === "en" ? `— MISSION COMPLETE · ${variant.title.en} —` : `— MISSION ACCOMPLIE · ${variant.title.fr} —`
-              : lang === "en" ? `— MISSION FAILED · ${variant.title.en} —` : `— MISSION ÉCHOUÉE · ${variant.title.fr} —`;
-          setTimeout(() => {
-            setMessages((m) => [
+      // Subtle hint (one at a time).
+      const hint = pickHint(nextWorld, flagsAdded, lang);
+      if (hint) {
+        nextWorld.hintsShown = [...world.hintsShown, hint.id];
+      }
+
+      // Outcome resolution — pick a flavored variant.
+      if (res.outcome === "success" || res.outcome === "failure") {
+        const variant = pickEnding(nextWorld, mergedFlags, res.outcome);
+        const narration = (res.outcomeNarration?.trim()) || variant.narration[lang];
+        const endTag =
+          res.outcome === "success"
+            ? lang === "en" ? `— MISSION COMPLETE · ${variant.title.en} —` : `— MISSION ACCOMPLIE · ${variant.title.fr} —`
+            : lang === "en" ? `— MISSION FAILED · ${variant.title.en} —` : `— MISSION ÉCHOUÉE · ${variant.title.fr} —`;
+        nextWorld.missionStatus = res.outcome === "success" ? "complete" : "failed";
+        nextWorld.claireLocation = res.outcome === "success" ? "rescued" : "lost";
+        nextWorld.dangerLevel = res.outcome === "success" ? 10 : 100;
+        setTimeout(() => {
+          setMessages((m) => {
+            if (m.some((x) => x.speaker === "system" && x.text === endTag)) return m;
+            return [
               ...m,
-              { id: uid(), speaker: "narrator", text: narration, timestamp: next.timeMinutes },
+              { id: uid(), speaker: "narrator", text: narration, timestamp: nextWorld.timeMinutes },
               { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
-            ]);
-          }, 400);
-          next.missionStatus = res.outcome === "success" ? "complete" : "failed";
-          next.claireLocation = res.outcome === "success" ? "rescued" : "lost";
-          next.dangerLevel = res.outcome === "success" ? 10 : 100;
-        }
+            ];
+          });
+        }, 400);
+      }
 
-        return next;
-      });
+      setWorld(nextWorld);
+
+      if (hint) {
+        setTimeout(() => {
+          setMessages((m) => {
+            if (m.some((x) => x.speaker === "narrator" && x.text === hint.text)) return m;
+            return [
+              ...m,
+              { id: uid(), speaker: "narrator", text: hint.text, timestamp: nextWorld.timeMinutes },
+            ];
+          });
+        }, 250);
+      }
     } catch (e) {
       console.error(e);
       setMessages((m) => [
