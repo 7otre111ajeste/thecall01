@@ -6,6 +6,7 @@ import {
   clearAutoSave,
   getManualSaves,
   MAX_MANUAL_SAVES,
+  overwriteManual,
   type SaveSlot,
   saveManual,
   upsertAutoSave,
@@ -66,6 +67,7 @@ export function TheCallGame({
   const [freeText, setFreeText] = useState("");
   const [awaitingAi, setAwaitingAi] = useState(false);
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [overwritePicker, setOverwritePicker] = useState<SaveSlot[] | null>(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
@@ -158,8 +160,7 @@ export function TheCallGame({
   const handleSaveGame = useCallback(() => {
     const existing = getManualSaves(storyId);
     if (existing.length >= MAX_MANUAL_SAVES) {
-      setSaveToast(t("game.save_full", lang));
-      setTimeout(() => setSaveToast(null), 2200);
+      setOverwritePicker(existing);
       return;
     }
     const res = saveManual({
@@ -175,6 +176,22 @@ export function TheCallGame({
       setTimeout(() => setSaveToast(null), 1800);
     }
   }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
+
+  const handleOverwrite = useCallback(
+    (slotId: string) => {
+      overwriteManual(slotId, {
+        storyId,
+        mode,
+        sceneId,
+        world,
+        messages,
+      });
+      setOverwritePicker(null);
+      setSaveToast(t("game.saved", lang));
+      setTimeout(() => setSaveToast(null), 1800);
+    },
+    [storyId, mode, sceneId, world, messages, lang],
+  );
 
   const handleChoice = useCallback(
     (choiceId: string) => {
@@ -503,6 +520,46 @@ export function TheCallGame({
           )}
         </div>
       </footer>
+
+      {overwritePicker && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setOverwritePicker(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-4 text-center text-sm font-semibold text-foreground">
+              {t("game.overwrite_title", lang)}
+            </p>
+            <div className="flex flex-col gap-2">
+              {overwritePicker.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => handleOverwrite(s.id)}
+                  className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-xs text-secondary-foreground hover:border-primary hover:bg-accent"
+                >
+                  <div className="truncate font-semibold">{s.name}</div>
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    {s.mode} ·{" "}
+                    {new Date(s.savedAt).toLocaleString(
+                      lang === "en" ? "en-US" : "fr-FR",
+                      { dateStyle: "short", timeStyle: "short" },
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setOverwritePicker(null)}
+              className="mt-4 w-full rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
+            >
+              {t("intro.cancel_btn", lang)}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
