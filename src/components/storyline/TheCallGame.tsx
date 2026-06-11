@@ -368,6 +368,7 @@ export function TheCallGame({
           mode,
           lang,
           history,
+          flags: world.flags,
         },
       });
       setMessages((m) => [
@@ -379,36 +380,53 @@ export function TheCallGame({
           timestamp: world.timeMinutes,
         },
       ]);
-      setWorld((w) => ({
-        ...w,
-        claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
-        playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
-        dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
-      }));
 
-      if (res.outcome === "success" || res.outcome === "failure") {
-        const narration = res.outcomeNarration?.trim();
-        if (narration) {
-          setMessages((m) => [
-            ...m,
-            { id: uid(), speaker: "narrator", text: narration, timestamp: world.timeMinutes },
-          ]);
-        }
-        const endTag =
-          res.outcome === "success"
-            ? lang === "en" ? "— MISSION COMPLETE —" : "— MISSION ACCOMPLIE —"
-            : lang === "en" ? "— MISSION FAILED —" : "— MISSION ÉCHOUÉE —";
-        setMessages((m) => [
-          ...m,
-          { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
-        ]);
-        setWorld((w) => ({
+      const flagsAdded = res.flagsAdded ?? [];
+      // Compute next world (stats + flags), then derive a subtle hint + possible ending.
+      setWorld((w) => {
+        const merged = Array.from(new Set([...w.flags, ...flagsAdded]));
+        const next: WorldState = {
           ...w,
-          missionStatus: res.outcome === "success" ? "complete" : "failed",
-          claireLocation: res.outcome === "success" ? "rescued" : "lost",
-          dangerLevel: res.outcome === "success" ? 10 : 100,
-        }));
-      }
+          flags: merged,
+          claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
+          playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
+          dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
+        };
+
+        // Subtle hint (one at a time).
+        const hint = pickHint(next, flagsAdded, lang);
+        if (hint) {
+          next.hintsShown = [...next.hintsShown, hint.id];
+          setTimeout(() => {
+            setMessages((m) => [
+              ...m,
+              { id: uid(), speaker: "narrator", text: hint.text, timestamp: next.timeMinutes },
+            ]);
+          }, 250);
+        }
+
+        // Outcome resolution — pick a flavored variant.
+        if (res.outcome === "success" || res.outcome === "failure") {
+          const variant = pickEnding(next, merged, res.outcome);
+          const narration = (res.outcomeNarration?.trim()) || variant.narration[lang];
+          const endTag =
+            res.outcome === "success"
+              ? lang === "en" ? `— MISSION COMPLETE · ${variant.title.en} —` : `— MISSION ACCOMPLIE · ${variant.title.fr} —`
+              : lang === "en" ? `— MISSION FAILED · ${variant.title.en} —` : `— MISSION ÉCHOUÉE · ${variant.title.fr} —`;
+          setTimeout(() => {
+            setMessages((m) => [
+              ...m,
+              { id: uid(), speaker: "narrator", text: narration, timestamp: next.timeMinutes },
+              { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
+            ]);
+          }, 400);
+          next.missionStatus = res.outcome === "success" ? "complete" : "failed";
+          next.claireLocation = res.outcome === "success" ? "rescued" : "lost";
+          next.dangerLevel = res.outcome === "success" ? 10 : 100;
+        }
+
+        return next;
+      });
     } catch (e) {
       console.error(e);
       setMessages((m) => [
