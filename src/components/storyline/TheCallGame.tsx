@@ -158,21 +158,31 @@ export function TheCallGame({
     const text = freeText.trim();
     if (!text || awaitingAi) return;
     setFreeText("");
-    setMessages((m) => [
-      ...m,
-      { id: uid(), speaker: "player", text, timestamp: world.timeMinutes },
-    ]);
+    const playerMsg: Message = {
+      id: uid(),
+      speaker: "player",
+      text,
+      timestamp: world.timeMinutes,
+    };
+    setMessages((m) => [...m, playerMsg]);
     setAwaitingAi(true);
     setTyping("claire");
     try {
+      const history = [...messages, playerMsg]
+        .filter((m) => m.speaker !== "system")
+        .slice(-20)
+        .map((m) => ({ speaker: m.speaker, text: m.text }));
+
       const res = await callClaire({
         data: {
           playerMessage: text,
           sceneTitle: scene.title,
           dangerLevel: world.dangerLevel,
           ravisseursPresents: world.ravisseursPresents,
+          claireLocation: world.claireLocation,
           mode,
           lang,
+          history,
         },
       });
       setMessages((m) => [
@@ -190,6 +200,30 @@ export function TheCallGame({
         playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
         dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
       }));
+
+      if (res.outcome === "success" || res.outcome === "failure") {
+        const narration = res.outcomeNarration?.trim();
+        if (narration) {
+          setMessages((m) => [
+            ...m,
+            { id: uid(), speaker: "narrator", text: narration, timestamp: world.timeMinutes },
+          ]);
+        }
+        const endTag =
+          res.outcome === "success"
+            ? lang === "en" ? "— MISSION COMPLETE —" : "— MISSION ACCOMPLIE —"
+            : lang === "en" ? "— MISSION FAILED —" : "— MISSION ÉCHOUÉE —";
+        setMessages((m) => [
+          ...m,
+          { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
+        ]);
+        setWorld((w) => ({
+          ...w,
+          missionStatus: res.outcome === "success" ? "complete" : "failed",
+          claireLocation: res.outcome === "success" ? "rescued" : "lost",
+          dangerLevel: res.outcome === "success" ? 10 : 100,
+        }));
+      }
     } catch (e) {
       console.error(e);
       setMessages((m) => [
@@ -205,7 +239,7 @@ export function TheCallGame({
       setTyping(null);
       setAwaitingAi(false);
     }
-  }, [freeText, awaitingAi, callClaire, scene.title, world, mode, lang]);
+  }, [freeText, awaitingAi, callClaire, scene.title, world, mode, lang, messages]);
 
   const dangerColor = useMemo(() => {
     if (world.dangerLevel >= 75) return "text-danger";
