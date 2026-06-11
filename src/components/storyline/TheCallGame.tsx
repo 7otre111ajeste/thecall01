@@ -301,19 +301,19 @@ export function TheCallGame({
 
       <footer className="border-t border-border bg-card/90 backdrop-blur">
         <div className="mx-auto max-w-2xl px-4 py-3">
-          {world.missionStatus !== "active" || scene.choices.length === 0 ? (
-            beatsDone && scene.choices.length === 0 ? (
+          {world.missionStatus !== "active" ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-center text-xs uppercase tracking-widest text-muted-foreground">
+                {world.missionStatus === "failed"
+                  ? t("game.mission_failed", lang)
+                  : t("game.mission_done", lang)}
+              </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    setWorld(initialWorldState);
-                    setMessages([]);
-                    enteredRef.current = null;
-                    setSceneId(START_SCENE);
-                  }}
+                  onClick={onBackToIntro}
                   className="flex-1 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:opacity-90"
                 >
-                  {t("game.restart", lang)}
+                  {t("game.back_to_intro", lang)}
                 </button>
                 <button
                   onClick={onExit}
@@ -322,9 +322,9 @@ export function TheCallGame({
                   {t("game.menu", lang)}
                 </button>
               </div>
-            ) : (
-              <p className="text-center text-xs text-muted-foreground">...</p>
-            )
+            </div>
+          ) : scene.choices.length === 0 ? (
+            <p className="text-center text-xs text-muted-foreground">...</p>
           ) : !beatsDone ? (
             <p className="text-center text-xs italic text-muted-foreground">
               {t("game.claire_speaks", lang)}
