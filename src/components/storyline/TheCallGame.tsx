@@ -27,6 +27,7 @@ import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
@@ -486,6 +487,7 @@ export function TheCallGame({
             <Stat label={t("game.danger", lang)} value={world.dangerLevel} color={dangerColor} />
             <Stat label={t("game.bond", lang)} value={world.claireConfiance} color="text-claire" />
             <LangToggle />
+            <ThemeToggle />
           </div>
         </div>
         <div className="mx-auto max-w-2xl px-4 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground">

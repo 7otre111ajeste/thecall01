@@ -11,6 +11,7 @@ import { t, useLang } from "@/lib/i18n";
 import { type NarrativeMode, type StoryModule } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 type PendingDelete =
   | { kind: "manual"; save: SaveSlot }
@@ -69,8 +70,9 @@ export function StoryIntro({
         background: `radial-gradient(ellipse at top, ${story.accent}33, #050505 60%), radial-gradient(ellipse at bottom, ${story.accent}11, transparent)`,
       }}
     >
-      <div className="absolute right-5 top-5 z-10">
+      <div className="absolute right-5 top-5 z-10 flex items-center gap-2">
         <LangToggle />
+        <ThemeToggle />
       </div>
       <div className="w-full max-w-md text-center">
         <div
