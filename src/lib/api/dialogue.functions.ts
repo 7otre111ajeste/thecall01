@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "../ai-gateway.server";
