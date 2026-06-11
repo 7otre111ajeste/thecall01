@@ -459,7 +459,7 @@ export function TheCallGame({
   }, [world.dangerLevel]);
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="storyline-themed flex h-screen flex-col bg-background text-foreground">
       <header className="border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2 text-xs font-mono">
           <div className="flex items-center gap-2">
