@@ -11,6 +11,7 @@ import { t, useLang } from "@/lib/i18n";
 import { type NarrativeMode, type StoryModule } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 type PendingDelete =
   | { kind: "manual"; save: SaveSlot }
