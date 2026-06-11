@@ -290,13 +290,24 @@ export function TheCallGame({
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
     setChronoSeconds((s) => s + minutes * 60);
+
+    // Track spam: count presses within last 12s of real time
+    const now = Date.now();
+    advancePressesRef.current = [
+      ...advancePressesRef.current.filter((ts) => now - ts < 12000),
+      now,
+    ];
+    const spamCount = advancePressesRef.current.length;
+
     let newTotal = 0;
+    let newDanger = 0;
     setWorld((w) => {
       newTotal = w.timeMinutes + minutes;
+      newDanger = clamp(w.dangerLevel + Math.ceil(minutes / 3) + (spamCount >= 3 ? 8 : 0));
       return {
         ...w,
         timeMinutes: newTotal,
-        dangerLevel: clamp(w.dangerLevel + Math.ceil(minutes / 3)),
+        dangerLevel: newDanger,
         playerStress: clamp(w.playerStress + Math.ceil(minutes / 4)),
         claireConfiance: clamp(w.claireConfiance - Math.ceil(minutes / 8)),
       };
@@ -311,8 +322,11 @@ export function TheCallGame({
       },
     ]);
 
-    // Pick a contextual reaction
-    const reactions = pickTimeReaction(minutes, newTotal, lang);
+    const reactions = pickTimeReaction(minutes, newTotal, lang, {
+      spamCount,
+      used: usedReactionsRef.current,
+      dangerLevel: newDanger,
+    });
     if (reactions.length === 0) return;
 
     setAwaitingAi(true);
@@ -347,6 +361,23 @@ export function TheCallGame({
             missionStatus: "failed",
             claireLocation: "lost",
             dangerLevel: 100,
+          }));
+        }
+        if (r.endsMissionSuccess) {
+          setMessages((m) => [
+            ...m,
+            {
+              id: uid(),
+              speaker: "system",
+              text:
+                lang === "en" ? "— MISSION COMPLETE —" : "— MISSION RÉUSSIE —",
+              timestamp: 0,
+            },
+          ]);
+          setWorld((w) => ({
+            ...w,
+            missionStatus: "complete",
+            dangerLevel: 0,
           }));
         }
         if (isLast) setAwaitingAi(false);
