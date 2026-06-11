@@ -83,16 +83,26 @@ export function StoryIntro({
         <p className="mb-8 text-base leading-relaxed text-white/70">{synopsis}</p>
 
         {!locked && auto && (
-          <button
-            onClick={() => onResume(auto)}
-            className="mb-3 w-full rounded-md border-2 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:opacity-90"
-            style={{
-              borderColor: story.accent,
-              backgroundColor: `${story.accent}22`,
-            }}
-          >
-            ▶ {t("intro.continue", lang)}
-          </button>
+          <div className="mb-3 flex gap-2">
+            <button
+              onClick={() => onResume(auto)}
+              className="flex-1 rounded-md border-2 px-6 py-3 text-sm font-semibold uppercase tracking-widest text-white transition hover:opacity-90"
+              style={{
+                borderColor: story.accent,
+                backgroundColor: `${story.accent}22`,
+              }}
+            >
+              ▶ {t("intro.continue", lang)}
+            </button>
+            <button
+              onClick={() => setPendingDelete({ kind: "auto" })}
+              className="rounded-md border-2 px-3 text-sm uppercase tracking-widest text-white/70 hover:bg-white/10"
+              style={{ borderColor: `${story.accent}55` }}
+              title={t("intro.delete", lang)}
+            >
+              ✕
+            </button>
+          </div>
         )}
 
         <p
