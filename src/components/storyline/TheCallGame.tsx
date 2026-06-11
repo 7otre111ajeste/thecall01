@@ -574,7 +574,7 @@ export function TheCallGame({
       {overwritePicker && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setOverwritePicker(null)}
+          onClick={cancelOverwrite}
         >
           <div
             className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
@@ -602,7 +602,7 @@ export function TheCallGame({
               ))}
             </div>
             <button
-              onClick={() => setOverwritePicker(null)}
+              onClick={cancelOverwrite}
               className="mt-4 w-full rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
             >
               {t("intro.cancel_btn", lang)}
@@ -653,7 +653,7 @@ export function TheCallGame({
       {namePrompt !== null && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={() => setNamePrompt(null)}
+          onClick={cancelNamePrompt}
         >
           <div
             className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
@@ -677,7 +677,7 @@ export function TheCallGame({
             />
             <div className="flex gap-2">
               <button
-                onClick={() => setNamePrompt(null)}
+                onClick={cancelNamePrompt}
                 className="flex-1 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
               >
                 {t("intro.cancel_btn", lang)}
