@@ -578,7 +578,7 @@ export function TheCallGame({
               {t("game.overwrite_title", lang)}
             </p>
             <div className="flex flex-col gap-2">
-              {overwritePicker.map((s) => (
+              {overwritePicker.saves.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => handleOverwrite(s.id)}
