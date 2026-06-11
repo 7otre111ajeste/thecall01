@@ -89,6 +89,20 @@ export const STRINGS: Dict = {
   "intro.load": { fr: "Charger", en: "Load" },
   "intro.delete": { fr: "Supprimer", en: "Delete" },
   "intro.new_game": { fr: "Nouvelle partie", en: "New game" },
+  "intro.confirm_delete_title": {
+    fr: "Supprimer cette sauvegarde ?",
+    en: "Delete this save?",
+  },
+  "intro.confirm_delete_desc": {
+    fr: "Cette action est définitive.",
+    en: "This action is permanent.",
+  },
+  "intro.confirm": { fr: "Supprimer", en: "Delete" },
+  "intro.cancel_btn": { fr: "Annuler", en: "Cancel" },
+  "game.overwrite_title": {
+    fr: "3 sauvegardes max — laquelle écraser ?",
+    en: "3 saves max — which one to overwrite?",
+  },
 };
 
 export function t(key: keyof typeof STRINGS | string, lang: Lang): string {
