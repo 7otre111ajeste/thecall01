@@ -66,6 +66,7 @@ function StorylineApp() {
       <TheCallGame
         mode={stage.mode}
         onExit={() => setStage({ kind: "home" })}
+        onBackToIntro={() => setStage({ kind: "intro", story: stage.story })}
       />
     );
   }
