@@ -142,6 +142,40 @@ export function TheCallGame({
     });
   }, [messages, typing]);
 
+  // Autosave on every meaningful state change (debounced)
+  useEffect(() => {
+    if (!beatsDone) return;
+    const handle = setTimeout(() => {
+      if (world.missionStatus === "active") {
+        upsertAutoSave({ storyId, mode, sceneId, world, messages });
+      } else {
+        clearAutoSave(storyId);
+      }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [world, sceneId, messages, mode, storyId, beatsDone]);
+
+  const handleSaveGame = useCallback(() => {
+    const existing = getManualSaves(storyId);
+    if (existing.length >= MAX_MANUAL_SAVES) {
+      setSaveToast(t("game.save_full", lang));
+      setTimeout(() => setSaveToast(null), 2200);
+      return;
+    }
+    const res = saveManual({
+      storyId,
+      mode,
+      sceneId,
+      world,
+      messages,
+      name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+    });
+    if (res.ok) {
+      setSaveToast(t("game.saved", lang));
+      setTimeout(() => setSaveToast(null), 1800);
+    }
+  }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
+
   const handleChoice = useCallback(
     (choiceId: string) => {
       const choice = scene.choices.find((c) => c.id === choiceId);
