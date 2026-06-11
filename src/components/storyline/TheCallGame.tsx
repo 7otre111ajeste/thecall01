@@ -423,7 +423,7 @@ export function TheCallGame({
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2 text-xs font-mono">
           <div className="flex items-center gap-2">
             <button
-              onClick={onExit}
+              onClick={() => requestExit("exit")}
               className="mr-2 rounded border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
               title={t("game.back_title", lang)}
             >
