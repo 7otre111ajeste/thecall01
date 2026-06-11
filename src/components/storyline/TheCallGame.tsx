@@ -287,6 +287,7 @@ export function TheCallGame({
 
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
+    setChronoSeconds((s) => s + minutes * 60);
     let newTotal = 0;
     setWorld((w) => {
       newTotal = w.timeMinutes + minutes;
