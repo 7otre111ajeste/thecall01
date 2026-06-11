@@ -111,7 +111,7 @@ function StoryCard({
 
       <span
         aria-hidden
-        className="absolute inset-y-0 left-0 w-[2px]"
+        className="absolute inset-y-0 left-0 w-[4px]"
         style={{ background: story.accent, opacity: locked ? 0.35 : 1 }}
       />
       <div
