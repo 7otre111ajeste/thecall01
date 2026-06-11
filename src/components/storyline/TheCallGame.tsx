@@ -732,6 +732,11 @@ export function TheCallGame({
           </div>
         </div>
       )}
+      <div className="border-t border-border bg-card/90 py-1 text-center">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          {t("menu.footer", lang)}
+        </p>
+      </div>
     </div>
   );
 }
