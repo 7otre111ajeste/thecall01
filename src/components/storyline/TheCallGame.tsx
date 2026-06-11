@@ -194,7 +194,48 @@ export function TheCallGame({
     [storyId, mode, sceneId, world, messages, lang],
   );
 
-  const handleChoice = useCallback(
+  const requestExit = useCallback(
+    (target: "exit" | "back") => {
+      if (world.missionStatus !== "active" || messages.length === 0) {
+        if (target === "exit") onExit();
+        else onBackToIntro();
+        return;
+      }
+      setExitPrompt(target);
+    },
+    [world.missionStatus, messages.length, onExit, onBackToIntro],
+  );
+
+  const confirmExit = useCallback(
+    (save: boolean) => {
+      const target = exitPrompt;
+      if (save) {
+        const existing = getManualSaves(storyId);
+        if (existing.length >= MAX_MANUAL_SAVES) {
+          // Overwrite the oldest manual save automatically when full at exit
+          const oldest = [...existing].sort((a, b) => a.savedAt - b.savedAt)[0];
+          if (oldest) {
+            overwriteManual(oldest.id, { storyId, mode, sceneId, world, messages });
+          }
+        } else {
+          saveManual({
+            storyId,
+            mode,
+            sceneId,
+            world,
+            messages,
+            name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+          });
+        }
+      }
+      setExitPrompt(null);
+      if (target === "exit") onExit();
+      else if (target === "back") onBackToIntro();
+    },
+    [exitPrompt, storyId, mode, sceneId, world, messages, scene.title, onExit, onBackToIntro],
+  );
+
+
     (choiceId: string) => {
       const choice = scene.choices.find((c) => c.id === choiceId);
       if (!choice) return;
