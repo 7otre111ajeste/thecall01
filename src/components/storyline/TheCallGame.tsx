@@ -138,13 +138,18 @@ export function TheCallGame({
   );
 
   const handleAdvanceTime = useCallback((minutes: number) => {
-    setWorld((w) => ({
-      ...w,
-      timeMinutes: w.timeMinutes + minutes,
-      dangerLevel: clamp(w.dangerLevel + Math.ceil(minutes / 3)),
-      playerStress: clamp(w.playerStress + Math.ceil(minutes / 4)),
-      claireConfiance: clamp(w.claireConfiance - Math.ceil(minutes / 8)),
-    }));
+    if (awaitingAi) return;
+    let newTotal = 0;
+    setWorld((w) => {
+      newTotal = w.timeMinutes + minutes;
+      return {
+        ...w,
+        timeMinutes: newTotal,
+        dangerLevel: clamp(w.dangerLevel + Math.ceil(minutes / 3)),
+        playerStress: clamp(w.playerStress + Math.ceil(minutes / 4)),
+        claireConfiance: clamp(w.claireConfiance - Math.ceil(minutes / 8)),
+      };
+    });
     setMessages((m) => [
       ...m,
       {
@@ -154,7 +159,51 @@ export function TheCallGame({
         timestamp: 0,
       },
     ]);
-  }, [lang]);
+
+    // Pick a contextual reaction
+    const reactions = pickTimeReaction(minutes, newTotal, lang);
+    if (reactions.length === 0) return;
+
+    setAwaitingAi(true);
+    let delay = 600;
+    reactions.forEach((r, idx) => {
+      const isLast = idx === reactions.length - 1;
+      setTimeout(() => {
+        if (r.speaker === "claire" || r.speaker === "unknown") {
+          setTyping(r.speaker);
+        }
+      }, delay);
+      delay += r.typingMs ?? 800;
+      setTimeout(() => {
+        setTyping(null);
+        setMessages((m) => [
+          ...m,
+          { id: uid(), speaker: r.speaker, text: r.text, timestamp: 0 },
+        ]);
+        if (r.endsMission) {
+          setMessages((m) => [
+            ...m,
+            {
+              id: uid(),
+              speaker: "system",
+              text:
+                lang === "en" ? "— MISSION FAILED —" : "— MISSION ÉCHOUÉE —",
+              timestamp: 0,
+            },
+          ]);
+          setWorld((w) => ({
+            ...w,
+            missionStatus: "failed",
+            claireLocation: "lost",
+            dangerLevel: 100,
+          }));
+        }
+        if (isLast) setAwaitingAi(false);
+      }, delay);
+      delay += 400;
+    });
+  }, [lang, awaitingAi]);
+
 
   const handleFreeText = useCallback(async () => {
     const text = freeText.trim();
