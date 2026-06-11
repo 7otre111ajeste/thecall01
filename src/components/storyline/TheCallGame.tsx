@@ -643,6 +643,49 @@ export function TheCallGame({
           </div>
         </div>
       )}
+
+      {namePrompt !== null && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setNamePrompt(null)}
+        >
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-1 text-center text-sm font-semibold text-foreground">
+              {t("game.name_save_title", lang)}
+            </p>
+            <p className="mb-3 text-center text-xs text-muted-foreground">
+              {t("game.name_save_desc", lang)}
+            </p>
+            <input
+              autoFocus
+              value={namePrompt}
+              onChange={(e) => setNamePrompt(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmName();
+              }}
+              maxLength={60}
+              className="mb-4 w-full rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setNamePrompt(null)}
+                className="flex-1 rounded-md border border-border px-3 py-2 text-xs uppercase tracking-widest text-muted-foreground hover:bg-accent"
+              >
+                {t("intro.cancel_btn", lang)}
+              </button>
+              <button
+                onClick={handleConfirmName}
+                className="flex-1 rounded-md bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-widest text-primary-foreground hover:opacity-90"
+              >
+                💾 {t("game.save_btn", lang)}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
