@@ -230,31 +230,18 @@ export function TheCallGame({
   const confirmExit = useCallback(
     (save: boolean) => {
       const target = exitPrompt;
-      if (save) {
-        const existing = getManualSaves(storyId);
-        if (existing.length >= MAX_MANUAL_SAVES) {
-          // Overwrite the oldest manual save automatically when full at exit
-          const oldest = [...existing].sort((a, b) => a.savedAt - b.savedAt)[0];
-          if (oldest) {
-            overwriteManual(oldest.id, { storyId, mode, sceneId, world, messages });
-          }
-        } else {
-          saveManual({
-            storyId,
-            mode,
-            sceneId,
-            world,
-            messages,
-            name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-          });
-        }
-      }
       setExitPrompt(null);
+      if (save) {
+        pendingExitRef.current = target;
+        setNamePrompt(defaultSaveName());
+        return;
+      }
       if (target === "exit") onExit();
       else if (target === "back") onBackToIntro();
     },
-    [exitPrompt, storyId, mode, sceneId, world, messages, scene.title, onExit, onBackToIntro],
+    [exitPrompt, defaultSaveName, onExit, onBackToIntro],
   );
+
 
   const handleChoice = useCallback(
     (choiceId: string) => {
