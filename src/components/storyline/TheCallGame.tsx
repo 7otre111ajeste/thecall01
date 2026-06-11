@@ -32,7 +32,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
   { label: "+10 min", minutes: 10 },
-  { label: "+1 h", minutes: 60 },
+  { label: "+15 min", minutes: 15 },
 ];
 
 function formatGameTime(min: number): string {
@@ -95,6 +95,8 @@ export function TheCallGame({
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
+  const advancePressesRef = useRef<number[]>([]);
+  const usedReactionsRef = useRef<Set<string>>(new Set());
   const callClaire = useServerFn(generateClaireReply);
 
   const scene = SCENES[sceneId];
@@ -288,13 +290,24 @@ export function TheCallGame({
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
     setChronoSeconds((s) => s + minutes * 60);
+
+    // Track spam: count presses within last 12s of real time
+    const now = Date.now();
+    advancePressesRef.current = [
+      ...advancePressesRef.current.filter((ts) => now - ts < 12000),
+      now,
+    ];
+    const spamCount = advancePressesRef.current.length;
+
     let newTotal = 0;
+    let newDanger = 0;
     setWorld((w) => {
       newTotal = w.timeMinutes + minutes;
+      newDanger = clamp(w.dangerLevel + Math.ceil(minutes / 3) + (spamCount >= 3 ? 8 : 0));
       return {
         ...w,
         timeMinutes: newTotal,
-        dangerLevel: clamp(w.dangerLevel + Math.ceil(minutes / 3)),
+        dangerLevel: newDanger,
         playerStress: clamp(w.playerStress + Math.ceil(minutes / 4)),
         claireConfiance: clamp(w.claireConfiance - Math.ceil(minutes / 8)),
       };
@@ -309,8 +322,11 @@ export function TheCallGame({
       },
     ]);
 
-    // Pick a contextual reaction
-    const reactions = pickTimeReaction(minutes, newTotal, lang);
+    const reactions = pickTimeReaction(minutes, newTotal, lang, {
+      spamCount,
+      used: usedReactionsRef.current,
+      dangerLevel: newDanger,
+    });
     if (reactions.length === 0) return;
 
     setAwaitingAi(true);
@@ -345,6 +361,23 @@ export function TheCallGame({
             missionStatus: "failed",
             claireLocation: "lost",
             dangerLevel: 100,
+          }));
+        }
+        if (r.endsMissionSuccess) {
+          setMessages((m) => [
+            ...m,
+            {
+              id: uid(),
+              speaker: "system",
+              text:
+                lang === "en" ? "— MISSION COMPLETE —" : "— MISSION RÉUSSIE —",
+              timestamp: 0,
+            },
+          ]);
+          setWorld((w) => ({
+            ...w,
+            missionStatus: "complete",
+            dangerLevel: 0,
           }));
         }
         if (isLast) setAwaitingAi(false);
@@ -848,55 +881,144 @@ type TimeReaction = {
   text: string;
   typingMs?: number;
   endsMission?: boolean;
+  endsMissionSuccess?: boolean;
 };
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function pickFresh(arr: string[], used: Set<string>): string {
+  const fresh = arr.filter((s) => !used.has(s));
+  const chosen = fresh.length > 0 ? pick(fresh) : pick(arr);
+  used.add(chosen);
+  return chosen;
+}
+
 function pickTimeReaction(
   minutes: number,
   totalMinutes: number,
   lang: "fr" | "en",
+  ctx: { spamCount: number; used: Set<string>; dangerLevel: number },
 ): TimeReaction[] {
-  // Hard fail past 120 in-game minutes
-  if (totalMinutes >= 120) {
+  const { spamCount, used, dangerLevel } = ctx;
+  const en = lang === "en";
+
+  // SPAM: 4+ rapid presses → kidnappers detect the call → mission fails
+  if (spamCount >= 4) {
     return [
       {
         speaker: "narrator",
-        text:
-          lang === "en"
-            ? "A muffled noise. Footsteps. The kidnappers found the phone."
-            : "Un bruit étouffé. Des pas. Les ravisseurs ont trouvé le téléphone.",
-        typingMs: 1200,
+        text: en
+          ? "Rustling. Someone grabs the phone from her hands."
+          : "Un bruissement. Quelqu'un lui arrache le téléphone des mains.",
+        typingMs: 1100,
       },
       {
         speaker: "unknown",
-        text:
-          lang === "en"
-            ? "...who is this? ...don't call back."
-            : "...c'est qui ça ? ...rappelle plus.",
-        typingMs: 1400,
+        text: en
+          ? "Stop calling. Now you've got a problem."
+          : "Arrête de rappeler. Maintenant t'as un problème.",
+        typingMs: 1300,
         endsMission: true,
       },
     ];
   }
 
-  // 60+ min : major scenario beat
-  if (minutes >= 60) {
+  // SPAM: 3 rapid presses → kidnapper notices, warning shot
+  if (spamCount === 3) {
     return [
       {
         speaker: "narrator",
-        text:
-          lang === "en"
-            ? "An engine starts in the distance. A door slams."
-            : "Un moteur démarre au loin. Une portière claque.",
+        text: en
+          ? "A floorboard creaks. Someone is listening."
+          : "Une latte de plancher craque. Quelqu'un écoute.",
+        typingMs: 1000,
+      },
+      {
+        speaker: "claire",
+        text: pickFresh(
+          en
+            ? [
+                "Shh — I think they heard. Don't make me talk.",
+                "Someone's coming. Wait. Just wait.",
+              ]
+            : [
+                "Chut — je crois qu'ils ont entendu. Me fais pas parler.",
+                "Quelqu'un arrive. Attends. Attends juste.",
+              ],
+          used,
+        ),
+        typingMs: 1200,
+      },
+    ];
+  }
+
+  // ENDING based on total elapsed time (>= 90 in-game min)
+  if (totalMinutes >= 90) {
+    if (dangerLevel >= 70) {
+      return [
+        {
+          speaker: "narrator",
+          text: en
+            ? "A muffled noise. Footsteps. The kidnappers found the phone."
+            : "Un bruit étouffé. Des pas. Les ravisseurs ont trouvé le téléphone.",
+          typingMs: 1200,
+        },
+        {
+          speaker: "unknown",
+          text: en
+            ? "...who is this? ...don't call back."
+            : "...c'est qui ça ? ...rappelle plus.",
+          typingMs: 1400,
+          endsMission: true,
+        },
+      ];
+    }
+    return [
+      {
+        speaker: "narrator",
+        text: en
+          ? "Sirens in the distance. Tires on gravel. Voices shouting orders."
+          : "Des sirènes au loin. Des pneus sur le gravier. Des voix qui crient des ordres.",
+        typingMs: 1300,
+      },
+      {
+        speaker: "claire",
+        text: en
+          ? "They're here. Oh god — they're here. Thank you. Thank you."
+          : "Ils sont là. Mon dieu — ils sont là. Merci. Merci.",
+        typingMs: 1500,
+        endsMissionSuccess: true,
+      },
+    ];
+  }
+
+  // 45+ in-game min : major scenario beat
+  if (totalMinutes >= 45) {
+    return [
+      {
+        speaker: "narrator",
+        text: pickFresh(
+          en
+            ? [
+                "An engine starts in the distance. A door slams.",
+                "A radio crackles in another room.",
+                "Heavy steps pace overhead.",
+              ]
+            : [
+                "Un moteur démarre au loin. Une portière claque.",
+                "Une radio grésille dans une autre pièce.",
+                "Des pas lourds font les cent pas au-dessus.",
+              ],
+          used,
+        ),
         typingMs: 1100,
       },
       {
         speaker: "claire",
-        text: pick(
-          lang === "en"
+        text: pickFresh(
+          en
             ? [
                 "They came back. They tied me to something. I can't move.",
                 "I think we moved. I don't recognize anything anymore.",
@@ -907,19 +1029,20 @@ function pickTimeReaction(
                 "Je crois qu'on a bougé. Je reconnais plus rien.",
                 "J'entends des voix. Plus proches. Plus proches. T'es encore là ?",
               ],
+          used,
         ),
         typingMs: 1600,
       },
     ];
   }
 
-  // 10+ min : Claire grows anxious
-  if (minutes >= 10) {
+  // 15+ in-game min : Claire grows anxious
+  if (totalMinutes >= 15) {
     return [
       {
         speaker: "claire",
-        text: pick(
-          lang === "en"
+        text: pickFresh(
+          en
             ? [
                 "Hello? Are you still there?",
                 "Please don't hang up. Say something.",
@@ -932,20 +1055,22 @@ function pickTimeReaction(
                 "J'ai peur. Le silence c'est pire qu'eux.",
                 "Pourquoi tu réponds pas ? S'il te plaît.",
               ],
+          used,
         ),
         typingMs: 1300,
       },
     ];
   }
 
-  // 1-9 min : small whisper
+  // early : small whisper
   return [
     {
       speaker: "claire",
-      text: pick(
-        lang === "en"
+      text: pickFresh(
+        en
           ? ["...still here?", "(breathing)", "...please don't leave."]
           : ["...t'es là ?", "(respiration)", "...pars pas, s'il te plaît."],
+        used,
       ),
       typingMs: 900,
     },
