@@ -6,6 +6,7 @@ import {
   clearAutoSave,
   getManualSaves,
   MAX_MANUAL_SAVES,
+  overwriteManual,
   type SaveSlot,
   saveManual,
   upsertAutoSave,
