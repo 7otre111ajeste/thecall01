@@ -15,7 +15,7 @@ export function Opening({ onDone }: { onDone: () => void }) {
           </h1>
           <div className="mx-auto mt-4 h-px w-0 bg-white storyline-line" />
           <p className="storyline-tag mt-6 font-mono text-[10px] uppercase tracking-[0.5em] text-white/40">
-            Your story. Your choices.
+            Your choices. Your story.
           </p>
         </div>
       </div>
