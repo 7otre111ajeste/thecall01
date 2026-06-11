@@ -491,7 +491,7 @@ export function TheCallGame({
               }`}
             />
             <span className="text-muted-foreground">CALL</span>
-            <span className="font-semibold">{formatGameTime(world.timeMinutes)}</span>
+            <span className="font-semibold tabular-nums">{formatChrono(chronoSeconds)}</span>
             <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
               {mode}
             </span>
