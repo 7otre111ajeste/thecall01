@@ -63,6 +63,20 @@ const HistoryMessage = z.object({
   text: z.string().max(500),
 });
 
+const KNOWN_FLAGS = [
+  "police_alerted",
+  "location_shared",
+  "weapon_grabbed",
+  "weapon_used",
+  "captor_provoked",
+  "captor_alerted",
+  "claire_injured",
+  "claire_hidden",
+  "claire_escaped_room",
+  "trust_broken",
+  "call_compromised",
+] as const;
+
 export const generateClaireReply = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
@@ -74,6 +88,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       mode: z.enum(["realiste", "comedie", "cinematique", "chaos", "comic"]).default("realiste"),
       lang: z.enum(["fr", "en"]).default("fr"),
       history: z.array(HistoryMessage).max(30).default([]),
+      flags: z.array(z.string().max(40)).max(20).default([]),
     }).parse,
   )
   .handler(async ({ data }) => {
@@ -89,6 +104,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         dangerDelta: 0,
         outcome: "continue" as const,
         outcomeNarration: "",
+        flagsAdded: [] as string[],
       };
     }
 
@@ -98,10 +114,16 @@ export const generateClaireReply = createServerFn({ method: "POST" })
     const langLine =
       data.lang === "en" ? "Answer in English only." : "Réponds uniquement en français.";
 
+    const flagsLine = data.flags.length
+      ? (data.lang === "en"
+          ? `Established facts so far: ${data.flags.join(", ")}.`
+          : `Faits établis jusqu'ici : ${data.flags.join(", ")}.`)
+      : "";
+
     const contextLine =
       data.lang === "en"
-        ? `Current scene: "${data.sceneTitle}". Claire location: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Captors nearby: ${data.ravisseursPresents ? "YES" : "no"}.`
-        : `Scène actuelle: "${data.sceneTitle}". Position de Claire: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Ravisseurs proches: ${data.ravisseursPresents ? "OUI" : "non"}.`;
+        ? `Current scene: "${data.sceneTitle}". Claire location: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Captors nearby: ${data.ravisseursPresents ? "YES" : "no"}. ${flagsLine}`
+        : `Scène actuelle: "${data.sceneTitle}". Position de Claire: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Ravisseurs proches: ${data.ravisseursPresents ? "OUI" : "non"}. ${flagsLine}`;
 
     const historyBlock = data.history
       .slice(-20)
@@ -116,6 +138,11 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       })
       .join("\n");
 
+    const flagsInstr =
+      data.lang === "en"
+        ? `If your reply establishes a NEW narrative fact, append [FLAGS:flag1,flag2] on its own line. Vocabulary ONLY: ${KNOWN_FLAGS.join(", ")}. Use them when they truly happen this turn — never invent flags, never repeat existing ones. Examples: Claire grabs a weapon = weapon_grabbed; she actually fires/strikes = weapon_used; she gets hurt = claire_injured; she names a location/landmark = location_shared; player calls cops = police_alerted; captor heard the phone = call_compromised; player insulted/yelled enough that Claire loses faith = trust_broken; captors are coming because of noise = captor_alerted.`
+        : `Si ta réponse établit un FAIT NARRATIF nouveau, ajoute [FLAGS:flag1,flag2] sur sa propre ligne. Vocabulaire EXCLUSIF : ${KNOWN_FLAGS.join(", ")}. Utilise-les UNIQUEMENT si le fait se produit vraiment ce tour-ci, n'invente jamais de flag, ne répète pas un flag déjà établi. Exemples : Claire saisit une arme = weapon_grabbed ; elle tire/frappe vraiment = weapon_used ; elle est blessée = claire_injured ; elle donne un lieu/repère = location_shared ; le joueur appelle la police = police_alerted ; un ravisseur a entendu le téléphone = call_compromised ; le joueur a été assez odieux pour qu'elle perde confiance = trust_broken ; des ravisseurs arrivent à cause du bruit = captor_alerted.`;
+
     const outcomeInstr =
       data.lang === "en"
         ? `On the LAST line, append exactly one of: [OUT:CONTINUE] | [OUT:SUCCESS:<short 3rd-person narration>] | [OUT:FAILURE:<short 3rd-person narration>]. Use SUCCESS only if the player's directive plausibly leads to rescue right now. Use FAILURE only if it plausibly leads to death or capture right now. Otherwise CONTINUE.`
@@ -124,7 +151,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
     try {
       const result = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        system: `${base}\n\n${flavor}\n${langLine}\n\n${outcomeInstr}`,
+        system: `${base}\n\n${flavor}\n${langLine}\n\n${flagsInstr}\n\n${outcomeInstr}`,
         messages: [
           { role: "system", content: contextLine },
           {
@@ -135,11 +162,12 @@ export const generateClaireReply = createServerFn({ method: "POST" })
           },
           { role: "user", content: data.playerMessage },
         ],
-        maxOutputTokens: 300,
+        maxOutputTokens: 320,
       });
 
       const raw = result.text || "";
-      const { reply, outcome, outcomeNarration } = parseOutcome(raw);
+      const { reply: noOutcome, outcome, outcomeNarration } = parseOutcome(raw);
+      const { reply, flagsAdded } = parseFlags(noOutcome, data.flags);
       const deltas = inferDeltas(data.playerMessage, reply, data.dangerLevel, data.ravisseursPresents);
 
       return {
@@ -147,6 +175,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         ...deltas,
         outcome,
         outcomeNarration: outcomeNarration.slice(0, 400),
+        flagsAdded,
       };
     } catch (err) {
       console.error("AI gateway error:", err);
@@ -157,9 +186,28 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         dangerDelta: 0,
         outcome: "continue" as const,
         outcomeNarration: "",
+        flagsAdded: [] as string[],
       };
     }
   });
+
+function parseFlags(text: string, existing: string[]): { reply: string; flagsAdded: string[] } {
+  const re = /\[FLAGS:([^\]]+)\]/i;
+  const m = text.match(re);
+  if (!m) return { reply: text, flagsAdded: [] };
+  const reply = text.replace(re, "").trim();
+  const known = new Set<string>(KNOWN_FLAGS as readonly string[]);
+  const seen = new Set(existing);
+  const added: string[] = [];
+  for (const raw of m[1].split(/[,;\s]+/)) {
+    const tag = raw.trim().toLowerCase();
+    if (tag && known.has(tag) && !seen.has(tag)) {
+      seen.add(tag);
+      added.push(tag);
+    }
+  }
+  return { reply, flagsAdded: added };
+}
 
 function parseOutcome(text: string): {
   reply: string;
