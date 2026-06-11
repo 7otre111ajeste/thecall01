@@ -521,3 +521,113 @@ function sleep(ms: number) {
 function clamp(n: number, min = 0, max = 100) {
   return Math.max(min, Math.min(max, n));
 }
+
+type TimeReaction = {
+  speaker: Speaker;
+  text: string;
+  typingMs?: number;
+  endsMission?: boolean;
+};
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pickTimeReaction(
+  minutes: number,
+  totalMinutes: number,
+  lang: "fr" | "en",
+): TimeReaction[] {
+  // Hard fail past 120 in-game minutes
+  if (totalMinutes >= 120) {
+    return [
+      {
+        speaker: "narrator",
+        text:
+          lang === "en"
+            ? "A muffled noise. Footsteps. The kidnappers found the phone."
+            : "Un bruit étouffé. Des pas. Les ravisseurs ont trouvé le téléphone.",
+        typingMs: 1200,
+      },
+      {
+        speaker: "unknown",
+        text:
+          lang === "en"
+            ? "...who is this? ...don't call back."
+            : "...c'est qui ça ? ...rappelle plus.",
+        typingMs: 1400,
+        endsMission: true,
+      },
+    ];
+  }
+
+  // 60+ min : major scenario beat
+  if (minutes >= 60) {
+    return [
+      {
+        speaker: "narrator",
+        text:
+          lang === "en"
+            ? "An engine starts in the distance. A door slams."
+            : "Un moteur démarre au loin. Une portière claque.",
+        typingMs: 1100,
+      },
+      {
+        speaker: "claire",
+        text: pick(
+          lang === "en"
+            ? [
+                "They came back. They tied me to something. I can't move.",
+                "I think we moved. I don't recognize anything anymore.",
+                "I hear voices. Closer. Closer. Are you still there?",
+              ]
+            : [
+                "Ils sont revenus. Ils m'ont attachée à quelque chose. Je peux plus bouger.",
+                "Je crois qu'on a bougé. Je reconnais plus rien.",
+                "J'entends des voix. Plus proches. Plus proches. T'es encore là ?",
+              ],
+        ),
+        typingMs: 1600,
+      },
+    ];
+  }
+
+  // 10+ min : Claire grows anxious
+  if (minutes >= 10) {
+    return [
+      {
+        speaker: "claire",
+        text: pick(
+          lang === "en"
+            ? [
+                "Hello? Are you still there?",
+                "Please don't hang up. Say something.",
+                "I'm scared. The silence is worse than them.",
+                "Why aren't you answering? Please.",
+              ]
+            : [
+                "Allô ? T'es toujours là ?",
+                "Raccroche pas. Dis quelque chose.",
+                "J'ai peur. Le silence c'est pire qu'eux.",
+                "Pourquoi tu réponds pas ? S'il te plaît.",
+              ],
+        ),
+        typingMs: 1300,
+      },
+    ];
+  }
+
+  // 1-9 min : small whisper
+  return [
+    {
+      speaker: "claire",
+      text: pick(
+        lang === "en"
+          ? ["...still here?", "(breathing)", "...please don't leave."]
+          : ["...t'es là ?", "(respiration)", "...pars pas, s'il te plaît."],
+      ),
+      typingMs: 900,
+    },
+  ];
+}
+
