@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "../ai-gateway.server";
@@ -52,9 +52,9 @@ export const generateClaireReply = createServerFn({ method: "POST" })
     const contextLine = `Contexte scène: "${data.sceneTitle}". Danger: ${data.dangerLevel}/100. Ravisseurs proches: ${data.ravisseursPresents ? "OUI (chuchote)" : "non"}.`;
 
     try {
-      const { object } = await generateObject({
-        model: gateway("google/gemini-2.5-flash"),
-        schema: ReplySchema,
+      const { experimental_output: object } = await generateText({
+        model: gateway("google/gemini-3-flash-preview"),
+        experimental_output: Output.object({ schema: ReplySchema }),
         system: SYSTEM_PROMPT,
         messages: [
           { role: "system", content: contextLine },
@@ -70,7 +70,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
     } catch (err) {
       console.error("AI gateway error:", err);
       return {
-        reply: "...la ligne grésille... je vous entends à peine.",
+        reply: "...attends... j'entends du bruit... je dois me cacher.",
         trustDelta: 0,
         stressDelta: 2,
         dangerDelta: 0,
