@@ -11,6 +11,11 @@ import {
   saveManual,
   upsertAutoSave,
 } from "@/lib/game/saves";
+import {
+  isChoiceLocked,
+  pickEnding,
+  pickHint,
+} from "@/lib/game/consequences";
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
@@ -54,7 +59,9 @@ export function TheCallGame({
 }) {
   const [lang] = useLang();
   const [world, setWorld] = useState<WorldState>(
-    initialSave?.world ?? initialWorldState,
+    initialSave?.world
+      ? { ...initialWorldState, ...initialSave.world }
+      : initialWorldState,
   );
   const [sceneId, setSceneId] = useState<string>(
     initialSave?.sceneId ?? START_SCENE,
