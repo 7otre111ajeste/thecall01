@@ -64,11 +64,8 @@ function StoryCard({
   return (
     <button
       onClick={onSelect}
-      disabled={locked}
-      className={`group relative overflow-hidden rounded-lg border border-white/10 bg-[#0a0a0a] px-5 py-4 text-left transition-all ${
-        locked
-          ? "cursor-not-allowed opacity-40"
-          : "hover:-translate-y-px hover:border-white/25 hover:bg-[#101010]"
+      className={`group relative overflow-hidden rounded-lg border border-white/10 bg-[#0a0a0a] px-5 py-4 text-left transition-all hover:-translate-y-px hover:border-white/25 hover:bg-[#101010] ${
+        locked ? "opacity-80" : ""
       }`}
     >
       <span
