@@ -32,7 +32,7 @@ import { ThemeToggle } from "./ThemeToggle";
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
   { label: "+10 min", minutes: 10 },
-  { label: "+1 h", minutes: 60 },
+  { label: "+15 min", minutes: 15 },
 ];
 
 function formatGameTime(min: number): string {
