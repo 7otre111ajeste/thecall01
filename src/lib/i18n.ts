@@ -68,6 +68,7 @@ export const STRINGS: Dict = {
   "game.mission_done": { fr: "Mission terminée", en: "Mission complete" },
   "game.restart": { fr: "Recommencer", en: "Restart" },
   "game.menu": { fr: "Menu", en: "Menu" },
+  "game.back_to_intro": { fr: "Recommencer", en: "Restart" },
   "game.claire_speaks": { fr: "Claire parle...", en: "Claire is speaking..." },
   "game.write_to_claire": { fr: "Écrire à Claire...", en: "Write to Claire..." },
   "game.send": { fr: "Envoyer", en: "Send" },
