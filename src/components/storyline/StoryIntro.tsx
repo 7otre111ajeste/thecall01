@@ -18,46 +18,7 @@ export function StoryIntro({
   const [showModes, setShowModes] = useState(false);
   const tagline = lang === "en" ? story.taglineEn : story.tagline;
   const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
-
-  if (story.status === "locked") {
-    return (
-      <div
-        className="relative flex min-h-screen flex-col items-center justify-center px-6 text-white"
-        style={{
-          background: `radial-gradient(ellipse at center, ${story.accent}22, #050505 70%)`,
-        }}
-      >
-        <div className="absolute right-5 top-5 z-10">
-          <LangToggle />
-        </div>
-        <div className="max-w-md text-center">
-          <div
-            className="mb-3 font-mono text-[10px] uppercase tracking-[0.4em]"
-            style={{ color: story.accent }}
-          >
-            {tagline}
-          </div>
-          <h1 className="mb-6 text-5xl font-bold tracking-wider">{story.title}</h1>
-          <p className="mb-8 text-sm leading-relaxed text-white/60">{synopsis}</p>
-          <div
-            className="mb-8 rounded-lg border p-6"
-            style={{ borderColor: `${story.accent}44`, backgroundColor: `${story.accent}11` }}
-          >
-            <p className="text-sm" style={{ color: story.accent }}>
-              🔒 {t("intro.locked_title", lang)}
-            </p>
-            <p className="mt-2 text-xs text-white/50">{t("intro.locked_sub", lang)}</p>
-          </div>
-          <button
-            onClick={onBack}
-            className="rounded-md border border-white/20 px-6 py-3 text-sm uppercase tracking-widest text-white/70 hover:bg-white/5"
-          >
-            {t("intro.back", lang)}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const locked = story.status === "locked";
 
   return (
     <div
@@ -89,18 +50,31 @@ export function StoryIntro({
         {!showModes ? (
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => onStart("realiste")}
-              className="w-full rounded-md px-6 py-4 text-lg font-semibold uppercase tracking-widest text-white transition hover:opacity-90"
+              onClick={() => !locked && onStart("realiste")}
+              disabled={locked}
+              className={`w-full rounded-md px-6 py-4 text-lg font-semibold uppercase tracking-widest text-white transition ${
+                locked ? "cursor-not-allowed grayscale" : "hover:opacity-90"
+              }`}
               style={{
-                backgroundColor: story.accent,
-                boxShadow: `0 0 30px ${story.accent}66`,
+                backgroundColor: locked ? "#1a1a1a" : story.accent,
+                boxShadow: locked ? "none" : `0 0 30px ${story.accent}66`,
+                opacity: locked ? 0.55 : 1,
+                color: locked ? "rgba(255,255,255,0.4)" : "white",
               }}
             >
-              {t("intro.start", lang)}
+              {locked ? `🔒 ${t("menu.locked", lang)}` : t("intro.start", lang)}
             </button>
+            {locked && (
+              <p className="text-[11px] uppercase tracking-widest text-white/40">
+                {t("intro.locked_sub", lang)}
+              </p>
+            )}
             <button
-              onClick={() => setShowModes(true)}
-              className="w-full rounded-md border px-6 py-3 text-sm uppercase tracking-widest hover:bg-white/5"
+              onClick={() => !locked && setShowModes(true)}
+              disabled={locked}
+              className={`w-full rounded-md border px-6 py-3 text-sm uppercase tracking-widest ${
+                locked ? "cursor-not-allowed opacity-40" : "hover:bg-white/5"
+              }`}
               style={{ borderColor: `${story.accent}66`, color: story.accent }}
             >
               {t("intro.mode", lang)}
