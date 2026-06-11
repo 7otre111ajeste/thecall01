@@ -12,33 +12,34 @@ export type Choice = {
   label: string;
   nextScene: string;
   effects?: Partial<WorldState>;
+  requiresFlag?: string;
+  blockedByFlag?: string;
 };
 
 export type Scene = {
   id: string;
   title: string;
-  // Sequence of messages pushed when entering this scene
   beats: Array<{ speaker: Speaker; text: string; delayMs?: number }>;
-  // Player choices, or null if scene auto-advances
   choices: Choice[];
-  // Optional auto-advance after beats (no choices)
   autoAdvance?: { nextScene: string; delayMs: number };
-  // Free-text input allowed?
   allowFreeText?: boolean;
-  // Apply on enter
   onEnter?: Partial<WorldState>;
-  // Allow advancing time?
   allowAdvanceTime?: boolean;
 };
 
 export type WorldState = {
   claireLocation: "unknown" | "basement" | "moving" | "rescued" | "lost";
-  dangerLevel: number; // 0-100
+  dangerLevel: number;
   ravisseursPresents: boolean;
-  claireConfiance: number; // 0-100
-  playerStress: number; // 0-100
+  claireConfiance: number;
+  playerStress: number;
   missionStatus: "active" | "failed" | "complete";
-  timeMinutes: number; // in-game elapsed minutes
+  timeMinutes: number;
+  // Narrative facts accumulated through play. Drives branch locking,
+  // subtle hints, and ending variant selection.
+  flags: string[];
+  // Hint IDs already shown (avoid repeating the same nudge).
+  hintsShown: string[];
 };
 
 export const initialWorldState: WorldState = {
@@ -49,4 +50,6 @@ export const initialWorldState: WorldState = {
   playerStress: 30,
   missionStatus: "active",
   timeMinutes: 0,
+  flags: [],
+  hintsShown: [],
 };

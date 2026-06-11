@@ -11,6 +11,11 @@ import {
   saveManual,
   upsertAutoSave,
 } from "@/lib/game/saves";
+import {
+  isChoiceLocked,
+  pickEnding,
+  pickHint,
+} from "@/lib/game/consequences";
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
@@ -54,7 +59,9 @@ export function TheCallGame({
 }) {
   const [lang] = useLang();
   const [world, setWorld] = useState<WorldState>(
-    initialSave?.world ?? initialWorldState,
+    initialSave?.world
+      ? { ...initialWorldState, ...initialSave.world }
+      : initialWorldState,
   );
   const [sceneId, setSceneId] = useState<string>(
     initialSave?.sceneId ?? START_SCENE,
@@ -361,6 +368,7 @@ export function TheCallGame({
           mode,
           lang,
           history,
+          flags: world.flags,
         },
       });
       setMessages((m) => [
@@ -372,36 +380,53 @@ export function TheCallGame({
           timestamp: world.timeMinutes,
         },
       ]);
-      setWorld((w) => ({
-        ...w,
-        claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
-        playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
-        dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
-      }));
 
-      if (res.outcome === "success" || res.outcome === "failure") {
-        const narration = res.outcomeNarration?.trim();
-        if (narration) {
-          setMessages((m) => [
-            ...m,
-            { id: uid(), speaker: "narrator", text: narration, timestamp: world.timeMinutes },
-          ]);
-        }
-        const endTag =
-          res.outcome === "success"
-            ? lang === "en" ? "— MISSION COMPLETE —" : "— MISSION ACCOMPLIE —"
-            : lang === "en" ? "— MISSION FAILED —" : "— MISSION ÉCHOUÉE —";
-        setMessages((m) => [
-          ...m,
-          { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
-        ]);
-        setWorld((w) => ({
+      const flagsAdded = res.flagsAdded ?? [];
+      // Compute next world (stats + flags), then derive a subtle hint + possible ending.
+      setWorld((w) => {
+        const merged = Array.from(new Set([...w.flags, ...flagsAdded]));
+        const next: WorldState = {
           ...w,
-          missionStatus: res.outcome === "success" ? "complete" : "failed",
-          claireLocation: res.outcome === "success" ? "rescued" : "lost",
-          dangerLevel: res.outcome === "success" ? 10 : 100,
-        }));
-      }
+          flags: merged,
+          claireConfiance: clamp(w.claireConfiance + (res.trustDelta ?? 0)),
+          playerStress: clamp(w.playerStress + (res.stressDelta ?? 0)),
+          dangerLevel: clamp(w.dangerLevel + (res.dangerDelta ?? 0)),
+        };
+
+        // Subtle hint (one at a time).
+        const hint = pickHint(next, flagsAdded, lang);
+        if (hint) {
+          next.hintsShown = [...next.hintsShown, hint.id];
+          setTimeout(() => {
+            setMessages((m) => [
+              ...m,
+              { id: uid(), speaker: "narrator", text: hint.text, timestamp: next.timeMinutes },
+            ]);
+          }, 250);
+        }
+
+        // Outcome resolution — pick a flavored variant.
+        if (res.outcome === "success" || res.outcome === "failure") {
+          const variant = pickEnding(next, merged, res.outcome);
+          const narration = (res.outcomeNarration?.trim()) || variant.narration[lang];
+          const endTag =
+            res.outcome === "success"
+              ? lang === "en" ? `— MISSION COMPLETE · ${variant.title.en} —` : `— MISSION ACCOMPLIE · ${variant.title.fr} —`
+              : lang === "en" ? `— MISSION FAILED · ${variant.title.en} —` : `— MISSION ÉCHOUÉE · ${variant.title.fr} —`;
+          setTimeout(() => {
+            setMessages((m) => [
+              ...m,
+              { id: uid(), speaker: "narrator", text: narration, timestamp: next.timeMinutes },
+              { id: uid(), speaker: "system", text: endTag, timestamp: 0 },
+            ]);
+          }, 400);
+          next.missionStatus = res.outcome === "success" ? "complete" : "failed";
+          next.claireLocation = res.outcome === "success" ? "rescued" : "lost";
+          next.dangerLevel = res.outcome === "success" ? 10 : 100;
+        }
+
+        return next;
+      });
     } catch (e) {
       console.error(e);
       setMessages((m) => [
@@ -508,15 +533,22 @@ export function TheCallGame({
           ) : (
             <div className="flex flex-col gap-2">
               <div className="grid grid-cols-1 gap-2">
-                {scene.choices.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleChoice(c.id)}
-                    className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
-                  >
-                    {c.label}
-                  </button>
-                ))}
+                {scene.choices
+                  .filter((c) => {
+                    if (c.requiresFlag && !world.flags.includes(c.requiresFlag)) return false;
+                    if (c.blockedByFlag && world.flags.includes(c.blockedByFlag)) return false;
+                    if (isChoiceLocked(c.id, world.flags)) return false;
+                    return true;
+                  })
+                  .map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleChoice(c.id)}
+                      className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
+                    >
+                      {c.label}
+                    </button>
+                  ))}
               </div>
 
               {scene.allowFreeText && (
