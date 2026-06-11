@@ -160,8 +160,7 @@ export function TheCallGame({
   const handleSaveGame = useCallback(() => {
     const existing = getManualSaves(storyId);
     if (existing.length >= MAX_MANUAL_SAVES) {
-      setSaveToast(t("game.save_full", lang));
-      setTimeout(() => setSaveToast(null), 2200);
+      setOverwritePicker(existing);
       return;
     }
     const res = saveManual({
@@ -177,6 +176,22 @@ export function TheCallGame({
       setTimeout(() => setSaveToast(null), 1800);
     }
   }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
+
+  const handleOverwrite = useCallback(
+    (slotId: string) => {
+      overwriteManual(slotId, {
+        storyId,
+        mode,
+        sceneId,
+        world,
+        messages,
+      });
+      setOverwritePicker(null);
+      setSaveToast(t("game.saved", lang));
+      setTimeout(() => setSaveToast(null), 1800);
+    },
+    [storyId, mode, sceneId, world, messages, lang],
+  );
 
   const handleChoice = useCallback(
     (choiceId: string) => {
