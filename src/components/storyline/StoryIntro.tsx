@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  clearAutoSave,
   deleteSave,
   getAutoSave,
   getManualSaves,
@@ -10,6 +11,11 @@ import { t, useLang } from "@/lib/i18n";
 import { type NarrativeMode, type StoryModule } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+
+type PendingDelete =
+  | { kind: "manual"; save: SaveSlot }
+  | { kind: "auto" }
+  | null;
 
 export function StoryIntro({
   story,
