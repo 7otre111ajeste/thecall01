@@ -140,11 +140,11 @@ export function TheCallGame({
       {
         id: uid(),
         speaker: "system",
-        text: `⏱ ${minutes} minute${minutes > 1 ? "s" : ""} se sont écoulées...`,
+        text: `⏱ ${minutes} ${minutes > 1 ? t("game.time_elapsed_many", lang) : t("game.time_elapsed_one", lang)}`,
         timestamp: 0,
       },
     ]);
-  }, []);
+  }, [lang]);
 
   const handleFreeText = useCallback(async () => {
     const text = freeText.trim();
@@ -163,6 +163,8 @@ export function TheCallGame({
           sceneTitle: scene.title,
           dangerLevel: world.dangerLevel,
           ravisseursPresents: world.ravisseursPresents,
+          mode,
+          lang,
         },
       });
       setMessages((m) => [
@@ -187,7 +189,7 @@ export function TheCallGame({
         {
           id: uid(),
           speaker: "system",
-          text: "⚠ Coupure réseau. Réessayez.",
+          text: t("game.network_error", lang),
           timestamp: 0,
         },
       ]);
@@ -195,7 +197,7 @@ export function TheCallGame({
       setTyping(null);
       setAwaitingAi(false);
     }
-  }, [freeText, awaitingAi, callClaire, scene.title, world]);
+  }, [freeText, awaitingAi, callClaire, scene.title, world, mode, lang]);
 
   const dangerColor = useMemo(() => {
     if (world.dangerLevel >= 75) return "text-danger";
@@ -211,7 +213,7 @@ export function TheCallGame({
             <button
               onClick={onExit}
               className="mr-2 rounded border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
-              title="Retour au menu"
+              title={t("game.back_title", lang)}
             >
               ←
             </button>
@@ -227,18 +229,19 @@ export function TheCallGame({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Stat label="STRESS" value={world.playerStress} color="text-amber-400" />
-            <Stat label="DANGER" value={world.dangerLevel} color={dangerColor} />
-            <Stat label="LIEN" value={world.claireConfiance} color="text-claire" />
+            <Stat label={t("game.stress", lang)} value={world.playerStress} color="text-amber-400" />
+            <Stat label={t("game.danger", lang)} value={world.dangerLevel} color={dangerColor} />
+            <Stat label={t("game.bond", lang)} value={world.claireConfiance} color="text-claire" />
+            <LangToggle />
           </div>
         </div>
         <div className="mx-auto max-w-2xl px-4 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
           {scene.title} ·{" "}
           {world.missionStatus === "active"
-            ? "Mission en cours"
+            ? t("game.mission_active", lang)
             : world.missionStatus === "failed"
-              ? "Mission échouée"
-              : "Mission terminée"}
+              ? t("game.mission_failed", lang)
+              : t("game.mission_done", lang)}
         </div>
       </header>
 
@@ -272,7 +275,7 @@ export function TheCallGame({
                   onClick={onExit}
                   className="rounded-md border border-border px-4 py-3 text-sm hover:bg-accent"
                 >
-                  Menu
+                  {t("game.menu", lang)}
                 </button>
               </div>
             ) : (
@@ -280,7 +283,7 @@ export function TheCallGame({
             )
           ) : !beatsDone ? (
             <p className="text-center text-xs italic text-muted-foreground">
-              Claire parle...
+              {t("game.claire_speaks", lang)}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -304,7 +307,7 @@ export function TheCallGame({
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleFreeText();
                     }}
-                    placeholder="Écrire à Claire..."
+                    placeholder={t("game.write_to_claire", lang)}
                     disabled={awaitingAi}
                     className="flex-1 rounded-md border border-border bg-input px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50"
                   />
@@ -313,22 +316,22 @@ export function TheCallGame({
                     disabled={awaitingAi || !freeText.trim()}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
                   >
-                    Envoyer
+                    {t("game.send", lang)}
                   </button>
                 </div>
               )}
 
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Avancer le temps
+                  {t("game.advance_time", lang)}
                 </span>
-                {TIME_OPTIONS.map((t) => (
+                {TIME_OPTIONS.map((opt) => (
                   <button
-                    key={t.minutes}
-                    onClick={() => handleAdvanceTime(t.minutes)}
+                    key={opt.minutes}
+                    onClick={() => handleAdvanceTime(opt.minutes)}
                     className="rounded border border-border bg-secondary px-2 py-1 text-xs hover:border-primary"
                   >
-                    {t.label}
+                    {opt.label}
                   </button>
                 ))}
               </div>
