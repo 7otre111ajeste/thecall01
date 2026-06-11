@@ -65,7 +65,7 @@ export function StoryIntro({
 
   return (
     <div
-      className="storyline-themed relative flex min-h-screen flex-col items-center justify-center px-6 py-10 text-white"
+      className="storyline-themed relative flex min-h-screen flex-col items-center justify-center px-6 py-10 pt-16 text-white sm:pt-10"
       style={{
         background: `radial-gradient(ellipse at top, ${story.accent}33, #050505 60%), radial-gradient(ellipse at bottom, ${story.accent}11, transparent)`,
       }}
@@ -81,7 +81,7 @@ export function StoryIntro({
         >
           {tagline}
         </div>
-        <h1 className="mb-6 text-6xl font-bold tracking-wider">{story.title}</h1>
+        <h1 className="mb-6 text-3xl font-bold tracking-wider sm:text-5xl md:text-6xl">{story.title}</h1>
         <p className="mb-8 text-base leading-relaxed text-white/70">{synopsis}</p>
 
         {!locked && auto && (

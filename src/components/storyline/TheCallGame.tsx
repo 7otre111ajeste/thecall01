@@ -509,7 +509,7 @@ export function TheCallGame({
   return (
     <div className="storyline-themed flex h-screen flex-col overflow-x-hidden bg-background text-foreground">
       <header className="border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-y-2 px-4 py-2 text-xs font-mono">
+        <div className="mx-auto flex max-w-2xl flex-col gap-y-2 px-4 py-2 text-xs font-mono sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <button
               onClick={() => requestExit("exit")}
