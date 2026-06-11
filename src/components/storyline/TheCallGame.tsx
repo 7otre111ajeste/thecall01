@@ -269,7 +269,7 @@ export function TheCallGame({
                   }}
                   className="flex-1 rounded-md bg-primary px-4 py-3 font-semibold text-primary-foreground transition hover:opacity-90"
                 >
-                  Recommencer
+                  {t("game.restart", lang)}
                 </button>
                 <button
                   onClick={onExit}
