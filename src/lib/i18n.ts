@@ -103,6 +103,16 @@ export const STRINGS: Dict = {
     fr: "3 sauvegardes max — laquelle écraser ?",
     en: "3 saves max — which one to overwrite?",
   },
+  "game.name_save_title": {
+    fr: "Nommer la sauvegarde",
+    en: "Name this save",
+  },
+  "game.name_save_desc": {
+    fr: "Laissez le nom par défaut ou écrivez le vôtre.",
+    en: "Keep the default name or write your own.",
+  },
+  "game.save_btn": { fr: "Sauvegarder", en: "Save" },
+
   "game.exit_title": {
     fr: "Quitter la partie ?",
     en: "Leave the game?",
