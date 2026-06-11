@@ -29,7 +29,7 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
 
       <header className="mx-auto mb-10 max-w-2xl text-center">
         <h1 className="text-2xl font-bold tracking-[0.25em]">MY STORYLINE</h1>
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.4em] text-white/40">
+        <p className="mt-2 font-mono text-[8px] uppercase tracking-[0.4em] text-white/25">
           {t("menu.tagline", lang)}
         </p>
       </header>
