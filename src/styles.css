@@ -113,3 +113,38 @@
 @utility pulse-danger {
   animation: pulse-danger 1.6s infinite;
 }
+
+@keyframes storyline-fade {
+  0% { opacity: 0; transform: scale(0.92); filter: blur(8px); letter-spacing: 0.6em; }
+  35% { opacity: 1; transform: scale(1); filter: blur(0); letter-spacing: 0.35em; }
+  80% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.05); filter: blur(4px); }
+}
+
+@keyframes storyline-line-grow {
+  0%, 25% { width: 0; opacity: 0; }
+  45% { width: 60%; opacity: 1; }
+  85% { width: 60%; opacity: 1; }
+  100% { width: 0; opacity: 0; }
+}
+
+@keyframes storyline-tag-fade {
+  0%, 30% { opacity: 0; }
+  55% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.storyline-logo {
+  animation: storyline-fade 4.8s ease-in-out forwards;
+  text-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+}
+
+.storyline-line {
+  animation: storyline-line-grow 4.8s ease-in-out forwards;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.storyline-tag {
+  animation: storyline-tag-fade 4.8s ease-in-out forwards;
+}
