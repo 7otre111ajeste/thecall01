@@ -27,6 +27,7 @@ import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
