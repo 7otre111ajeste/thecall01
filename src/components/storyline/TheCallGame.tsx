@@ -95,6 +95,8 @@ export function TheCallGame({
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const skipNextBeatsRef = useRef<boolean>(!!initialSave);
+  const advancePressesRef = useRef<number[]>([]);
+  const usedReactionsRef = useRef<Set<string>>(new Set());
   const callClaire = useServerFn(generateClaireReply);
 
   const scene = SCENES[sceneId];
