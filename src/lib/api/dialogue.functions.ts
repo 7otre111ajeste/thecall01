@@ -1,34 +1,42 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateText } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import { createLovableAiGatewayProvider } from "../ai-gateway.server";
 
-const BASE_RULES_FR = `Tu joues le rôle de CLAIRE, une jeune femme kidnappée enfermée dans un sous-sol inconnu, en pleine communication téléphonique d'urgence avec le joueur.
+const BASE_RULES_FR = `Tu joues CLAIRE, jeune femme kidnappée en pleine communication téléphonique d'urgence avec le joueur.
 
-RÈGLES STRICTES (NE JAMAIS VIOLER) :
-- Tu réponds UNIQUEMENT en tant que Claire, jamais en tant qu'IA ou narrateur.
-- Tu ne résous PAS l'intrigue. Tu ne révèles AUCUN détail non fourni dans le contexte.
-- Tu n'inventes PAS de nouveaux personnages, lieux, ou événements scriptés majeurs.
-- Tu restes dans le ton : thriller, urgence, peur contenue, chuchotement quand le danger est proche.
-- Réponses TRÈS courtes (1 à 2 phrases max), réalistes, fragmentées par l'émotion.
-- Tu réponds DIRECTEMENT au dernier message du joueur.
-- Tu ne répètes jamais une phrase de secours générique comme "j'entends du bruit" sauf si le danger est immédiat ET que les ravisseurs sont présents.
-- Pas d'emojis. Pas de markdown. Pas de JSON, pas de stats, pas d'explication technique.
-- Si le joueur sort du contexte, tu ramènes à la situation : tu as peur, tu chuchotes.`;
+RÈGLES ABSOLUES :
+- Tu réponds UNIQUEMENT en tant que Claire. Jamais en tant qu'IA ou narrateur.
+- Tu réponds DIRECTEMENT et SPÉCIFIQUEMENT au DERNIER message du joueur. Ta réponse doit faire écho à ses mots, même si tu refuses.
+- COHÉRENCE TOTALE avec l'historique fourni : si tu viens de dire "je suis dehors", tu NE peux PAS dire "je suis enfermée". Relis l'historique avant de parler.
+- Tu peux ACCEPTER les directives du joueur si elles sont plausibles dans ta situation actuelle (lieu, danger, ravisseurs présents ou non). Quand tu acceptes, tu décris brièvement ce que tu fais.
+- Tu peux REFUSER si c'est impossible/dangereux, mais ton refus doit reprendre les mots du joueur ("Non, je ne peux pas crier, ils me trouveraient").
+- Réponses TRÈS courtes (1-2 phrases), fragmentées par la peur. Chuchote si les ravisseurs sont proches.
+- Pas d'emoji, pas de markdown, pas de méta-commentaire.
 
-const BASE_RULES_EN = `You play CLAIRE, a young kidnapped woman locked in an unknown basement, on an emergency phone call with the player.
+CONSÉQUENCES NARRATIVES :
+- Si la directive du joueur, exécutée dans la scène actuelle, mène à la LIBÉRATION (être trouvée par la police, atteindre une route passante, signal lumineux vu par les secours, etc.) → outcome="success".
+- Si la directive mène à la MORT ou la CAPTURE définitive (crier alors que les ravisseurs sont à 2m, courir à découvert sous leurs yeux, frapper un ravisseur armé sans plan, raccrocher en plein danger, etc.) → outcome="failure".
+- Sinon outcome="continue".
+- "outcomeNarration" : si success/failure, écris 1-2 phrases de narration cinématique (3e personne, ton sec) décrivant ce qui se passe. Sinon laisse vide.`;
 
-STRICT RULES (NEVER BREAK):
-- You ONLY answer as Claire, never as an AI or narrator.
-- You do NOT solve the plot. You do NOT reveal details not in the context.
-- You do NOT invent new characters, locations, or major scripted events.
-- Stay in tone: thriller, urgency, contained fear, whisper when danger is close.
-- Very SHORT replies (1-2 sentences max), realistic, broken by emotion.
-- Reply DIRECTLY to the player's last message.
-- Never repeat a generic fallback like "I hear noises" unless danger is immediate AND captors are present.
-- No emojis. No markdown. No JSON, no stats, no technical text.
-- If the player goes off-topic, bring them back: you are scared, you whisper.`;
+const BASE_RULES_EN = `You are CLAIRE, a kidnapped young woman on an emergency phone call with the player.
+
+ABSOLUTE RULES:
+- Answer ONLY as Claire. Never as AI or narrator.
+- Answer DIRECTLY and SPECIFICALLY to the player's LAST message. Echo their words even when refusing.
+- FULL CONSISTENCY with the provided history: if you just said "I'm outside", you CAN'T say "I'm locked in". Re-read the history before speaking.
+- You may ACCEPT the player's directives if plausible in your current state (location, danger, captors present or not). When you accept, briefly describe what you do.
+- You may REFUSE if impossible/dangerous, but the refusal must reuse the player's words ("No, I can't scream, they'd find me").
+- VERY short replies (1-2 sentences), broken by fear. Whisper if captors are close.
+- No emoji, no markdown, no meta-commentary.
+
+NARRATIVE CONSEQUENCES:
+- If the player's directive, executed in the current scene, leads to RESCUE (found by police, reaching a busy road, light signal seen by rescuers, etc.) → outcome="success".
+- If it leads to DEATH or definitive CAPTURE (screaming with captors 2m away, running in the open under their eyes, hitting an armed captor with no plan, hanging up mid-danger, etc.) → outcome="failure".
+- Otherwise outcome="continue".
+- "outcomeNarration": if success/failure, write 1-2 sentences of cinematic narration (3rd person, dry tone). Otherwise leave empty.`;
 
 const MODE_FLAVOR: Record<string, { fr: string; en: string }> = {
   realiste: {
@@ -36,19 +44,24 @@ const MODE_FLAVOR: Record<string, { fr: string; en: string }> = {
     en: "Realistic, raw tone. No exaggerated drama.",
   },
   cinematique: {
-    fr: "Ton cinématique, formules courtes et marquantes, comme un thriller hollywoodien.",
-    en: "Cinematic tone, short striking lines, like a Hollywood thriller.",
+    fr: "Ton cinématique, formules courtes et marquantes.",
+    en: "Cinematic tone, short striking lines.",
   },
   comic: {
-    fr: "Tu restes TOUJOURS sérieuse et effrayée — la situation est réelle. Mais si le joueur sort une réplique vraiment absurde ou drôle, tu peux laisser passer une réaction sèche, ironique ou un trait d'humour noir murmuré, AVANT de revenir immédiatement à la peur. Jamais de blague gratuite, jamais d'emoji, jamais cassé.",
-    en: "You stay ALWAYS serious and scared — the situation is real. But if the player says something truly absurd or funny, you may slip a dry, ironic, or darkly humorous whispered reaction, THEN immediately return to fear. Never gratuitous jokes, never emoji, never break character.",
+    fr: "Tu restes TOUJOURS sérieuse et effrayée. Mais si le joueur sort une réplique absurde, tu peux glisser une réaction sèche/ironique chuchotée, AVANT de revenir à la peur.",
+    en: "You stay ALWAYS serious and scared. If the player says something absurd, you may slip a dry/ironic whispered reaction, THEN return to fear.",
   },
   comedie: {
-    fr: "Ton plus léger, mais Claire reste apeurée. Humour noir occasionnel.",
-    en: "Lighter tone, but Claire stays scared. Occasional dark humor.",
+    fr: "Ton plus léger, mais Claire reste apeurée.",
+    en: "Lighter tone, but Claire stays scared.",
   },
   chaos: { fr: "", en: "" },
 };
+
+const HistoryMessage = z.object({
+  speaker: z.enum(["claire", "player", "unknown", "narrator", "system"]),
+  text: z.string().max(500),
+});
 
 export const generateClaireReply = createServerFn({ method: "POST" })
   .inputValidator(
@@ -57,8 +70,10 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       sceneTitle: z.string().max(200),
       dangerLevel: z.number().min(0).max(100),
       ravisseursPresents: z.boolean(),
+      claireLocation: z.string().max(40).default("unknown"),
       mode: z.enum(["realiste", "comedie", "cinematique", "chaos", "comic"]).default("realiste"),
       lang: z.enum(["fr", "en"]).default("fr"),
+      history: z.array(HistoryMessage).max(30).default([]),
     }).parse,
   )
   .handler(async ({ data }) => {
@@ -67,11 +82,13 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       return {
         reply:
           data.lang === "en"
-            ? "...I... I can't talk anymore. (unstable connection)"
-            : "...je... je n'arrive plus à parler. (connexion instable)",
+            ? "...I... I can't talk anymore."
+            : "...je... je n'arrive plus à parler.",
         trustDelta: 0,
         stressDelta: 0,
         dangerDelta: 0,
+        outcome: "continue" as const,
+        outcomeNarration: "",
       };
     }
 
@@ -83,43 +100,75 @@ export const generateClaireReply = createServerFn({ method: "POST" })
 
     const contextLine =
       data.lang === "en"
-        ? `Scene context: "${data.sceneTitle}". Danger: ${data.dangerLevel}/100. Captors nearby: ${data.ravisseursPresents ? "YES (whisper)" : "no"}.`
-        : `Contexte scène: "${data.sceneTitle}". Danger: ${data.dangerLevel}/100. Ravisseurs proches: ${data.ravisseursPresents ? "OUI (chuchote)" : "non"}.`;
+        ? `Current scene: "${data.sceneTitle}". Claire location: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Captors nearby: ${data.ravisseursPresents ? "YES" : "no"}.`
+        : `Scène actuelle: "${data.sceneTitle}". Position de Claire: ${data.claireLocation}. Danger: ${data.dangerLevel}/100. Ravisseurs proches: ${data.ravisseursPresents ? "OUI" : "non"}.`;
+
+    const historyBlock = data.history
+      .slice(-20)
+      .map((m) => {
+        const tag =
+          m.speaker === "player"
+            ? data.lang === "en" ? "PLAYER" : "JOUEUR"
+            : m.speaker === "claire"
+              ? "CLAIRE"
+              : m.speaker.toUpperCase();
+        return `${tag}: ${m.text}`;
+      })
+      .join("\n");
 
     try {
-      const result = await generateText({
+      const { experimental_output } = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
         system: `${base}\n\n${flavor}\n${langLine}`,
+        experimental_output: Output.object({
+          schema: z.object({
+            reply: z.string(),
+            trustDelta: z.number(),
+            stressDelta: z.number(),
+            dangerDelta: z.number(),
+            outcome: z.enum(["continue", "success", "failure"]),
+            outcomeNarration: z.string(),
+          }),
+        }),
         messages: [
           { role: "system", content: contextLine },
+          {
+            role: "system",
+            content:
+              (data.lang === "en" ? "Conversation so far:\n" : "Conversation jusqu'ici :\n") +
+              (historyBlock || "(empty)"),
+          },
           { role: "user", content: data.playerMessage },
         ],
-        maxOutputTokens: 100,
+        maxOutputTokens: 400,
       });
-      const reply = cleanClaireReply(result.text);
-      const deltas = inferStatDeltas(data.playerMessage, data.dangerLevel, data.ravisseursPresents);
+
+      const out = experimental_output as {
+        reply: string;
+        trustDelta: number;
+        stressDelta: number;
+        dangerDelta: number;
+        outcome: "continue" | "success" | "failure";
+        outcomeNarration: string;
+      };
+
       return {
-        reply:
-          reply ||
-          buildContextualFallback(
-            data.playerMessage,
-            data.dangerLevel,
-            data.ravisseursPresents,
-            data.lang,
-          ),
-        ...deltas,
+        reply: cleanClaireReply(out.reply) || fallback(data.lang),
+        trustDelta: clampDelta(out.trustDelta, -15, 15),
+        stressDelta: clampDelta(out.stressDelta, -15, 20),
+        dangerDelta: clampDelta(out.dangerDelta, -15, 25),
+        outcome: out.outcome,
+        outcomeNarration: (out.outcomeNarration || "").slice(0, 400),
       };
     } catch (err) {
       console.error("AI gateway error:", err);
-      const deltas = inferStatDeltas(data.playerMessage, data.dangerLevel, data.ravisseursPresents);
       return {
-        reply: buildContextualFallback(
-          data.playerMessage,
-          data.dangerLevel,
-          data.ravisseursPresents,
-          data.lang,
-        ),
-        ...deltas,
+        reply: fallback(data.lang),
+        trustDelta: 0,
+        stressDelta: 1,
+        dangerDelta: 0,
+        outcome: "continue" as const,
+        outcomeNarration: "",
       };
     }
   });
@@ -129,113 +178,17 @@ function cleanClaireReply(text: string) {
     .trim()
     .replace(/^Claire\s*:\s*/i, "")
     .replace(/^["']|["']$/g, "")
-    .slice(0, 280)
+    .slice(0, 320)
     .trim();
 }
 
-function inferStatDeltas(message: string, dangerLevel: number, ravisseursPresents: boolean) {
-  const text = message.toLowerCase();
-  const reassuring =
-    /(respire|calme|je suis là|avec vous|ça va aller|courage|doucement|restez calme|chuchot|breathe|calm|with you|it's ok|stay calm|whisper)/i.test(
-      text,
-    );
-  const useful =
-    /(décris|regard|écout|odeur|fenêtre|porte|indice|position|gps|cache|silence|note|batterie|describe|look|listen|smell|window|door|clue|hide|battery)/i.test(
-      text,
-    );
-  const risky =
-    /(crie|hurle|cours|frappe|attaque|ouvre|sors|fuis|allume|parle fort|lumière|scream|shout|run|hit|attack|open|escape|light)/i.test(
-      text,
-    );
-  const dismissive =
-    /(blague|mens|menteuse|tais-toi|raccroche|débrouille|m'en fous|fake|liar|shut up|hang up|don't care)/i.test(
-      text,
-    );
-
-  let trustDelta = 0;
-  let stressDelta = ravisseursPresents || dangerLevel > 75 ? 2 : 0;
-  let dangerDelta = 0;
-
-  if (reassuring) {
-    trustDelta += 6;
-    stressDelta -= 4;
-  }
-  if (useful) {
-    trustDelta += 4;
-    stressDelta -= 1;
-  }
-  if (risky) {
-    trustDelta -= 5;
-    stressDelta += 7;
-    dangerDelta += ravisseursPresents ? 12 : 7;
-  }
-  if (dismissive) {
-    trustDelta -= 9;
-    stressDelta += 8;
-    dangerDelta += 2;
-  }
-  if (!reassuring && !useful && !risky && !dismissive) {
-    stressDelta += 1;
-  }
-
-  return {
-    trustDelta: clampDelta(trustDelta, -15, 15),
-    stressDelta: clampDelta(stressDelta, -10, 15),
-    dangerDelta: clampDelta(dangerDelta, -5, 20),
-  };
-}
-
-function buildContextualFallback(
-  message: string,
-  dangerLevel: number,
-  ravisseursPresents: boolean,
-  lang: "fr" | "en",
-) {
-  const text = message.toLowerCase();
-  const fr = lang === "fr";
-  if (/(respire|calme|courage|doucement|breathe|calm)/i.test(text)) {
-    return fr
-      ? "D'accord... je vais essayer de respirer. Ne me laissez pas seule."
-      : "Okay... I'll try to breathe. Please don't leave me alone.";
-  }
-  if (/(décris|regard|voir|indice|autour|describe|look|see|around)/i.test(text)) {
-    return fr
-      ? "Je regarde sans bouger... du béton humide, des tuyaux, une odeur de fioul."
-      : "I look without moving... damp concrete, pipes, a smell of fuel.";
-  }
-  if (/(écout|bruit|son|listen|noise|sound)/i.test(text)) {
-    return fr
-      ? "J'entends un bourdonnement au-dessus... et parfois un train, très loin."
-      : "I hear a hum above... and sometimes a train, very far.";
-  }
-  if (/(cache|silence|tais|chuchot|hide|quiet|whisper)/i.test(text)) {
-    return ravisseursPresents || dangerLevel > 70
-      ? fr
-        ? "Oui... je baisse la voix. Je reste contre le mur."
-        : "Yes... I lower my voice. I stay against the wall."
-      : fr
-        ? "Je peux chuchoter. Pour l'instant ils ne sont pas là."
-        : "I can whisper. For now they're not in the room.";
-  }
-  if (/(crie|hurle|cours|frappe|sors|scream|shout|run|hit)/i.test(text)) {
-    return fr
-      ? "Non... si je fais ça, ils vont m'entendre. Il faut une autre idée."
-      : "No... if I do that, they'll hear me. We need another idea.";
-  }
-  if (/(police|secours|aide|gps|position|help|locate)/i.test(text)) {
-    return fr
-      ? "Oui... dites-leur que je suis dans un sous-sol. Il y a une vieille chaudière."
-      : "Yes... tell them I'm in a basement. There's an old boiler.";
-  }
-  return ravisseursPresents && dangerLevel > 85
-    ? fr
-      ? "Je vous entends... mais je dois parler très bas. Dites-moi quoi faire."
-      : "I hear you... but I must speak very low. Tell me what to do."
-    : fr
-      ? "Je vous écoute. Guidez-moi, je ferai ce que vous me dites."
-      : "I'm listening. Guide me, I'll do what you say.";
+function fallback(lang: "fr" | "en") {
+  return lang === "en"
+    ? "I'm listening. Tell me what to do."
+    : "Je vous écoute. Dites-moi quoi faire.";
 }
 
 function clampDelta(n: number, min: number, max: number) {
+  if (typeof n !== "number" || Number.isNaN(n)) return 0;
   return Math.max(min, Math.min(max, n));
 }
