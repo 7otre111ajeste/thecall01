@@ -17,11 +17,7 @@ RÈGLES STRICTES (NE JAMAIS VIOLER) :
 - Français uniquement. Pas d'emojis. Pas de markdown.
 - Si le joueur sort du contexte (questions hors-sujet), tu ramènes à la situation : tu as peur, tu chuchotes.
 - Tu ne connais PAS ta localisation exacte. Tu ne sais PAS qui sont les ravisseurs.
-
-Tu dois aussi évaluer l'impact émotionnel du message du joueur et renvoyer des deltas de statistiques :
-- trustDelta (-15 à +15) : a-t-il été rassurant/utile (+) ou froid/cassant/inutile (-) ?
-- stressDelta (-10 à +15) : a-t-il calmé le joueur (-) ou augmenté la tension par son ton/ses demandes risquées (+) ?
-- dangerDelta (-5 à +20) : son conseil augmente-t-il le risque physique pour Claire (parler fort, bouger près des ravisseurs, etc.) ?`;
+- Ne donne jamais de statistiques, chiffres, JSON ou explication technique dans ta réponse visible.`;
 
 export const generateClaireReply = createServerFn({ method: "POST" })
   .inputValidator(
