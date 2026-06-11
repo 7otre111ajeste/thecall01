@@ -159,41 +159,42 @@ export function TheCallGame({
     return () => clearTimeout(handle);
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
+  const defaultSaveName = useCallback(
+    () => `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
+    [scene.title, world.timeMinutes],
+  );
+
   const handleSaveGame = useCallback(() => {
+    setNamePrompt(defaultSaveName());
+  }, [defaultSaveName]);
+
+  const handleConfirmName = useCallback(() => {
+    const name = (namePrompt ?? "").trim() || defaultSaveName();
     const existing = getManualSaves(storyId);
     if (existing.length >= MAX_MANUAL_SAVES) {
-      setOverwritePicker(existing);
+      setOverwritePicker({ saves: existing, name });
+      setNamePrompt(null);
       return;
     }
-    const res = saveManual({
-      storyId,
-      mode,
-      sceneId,
-      world,
-      messages,
-      name: `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-    });
+    const res = saveManual({ storyId, mode, sceneId, world, messages, name });
+    setNamePrompt(null);
     if (res.ok) {
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
     }
-  }, [storyId, mode, sceneId, world, messages, scene.title, lang]);
+  }, [namePrompt, defaultSaveName, storyId, mode, sceneId, world, messages, lang]);
 
   const handleOverwrite = useCallback(
     (slotId: string) => {
-      overwriteManual(slotId, {
-        storyId,
-        mode,
-        sceneId,
-        world,
-        messages,
-      });
+      const name = overwritePicker?.name ?? defaultSaveName();
+      overwriteManual(slotId, { storyId, mode, sceneId, world, messages, name });
       setOverwritePicker(null);
       setSaveToast(t("game.saved", lang));
       setTimeout(() => setSaveToast(null), 1800);
     },
-    [storyId, mode, sceneId, world, messages, lang],
+    [overwritePicker, defaultSaveName, storyId, mode, sceneId, world, messages, lang],
   );
+
 
   const requestExit = useCallback(
     (target: "exit" | "back") => {
