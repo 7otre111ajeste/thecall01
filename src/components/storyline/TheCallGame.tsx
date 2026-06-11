@@ -84,6 +84,13 @@ export function TheCallGame({
   const [overwritePicker, setOverwritePicker] = useState<{ saves: SaveSlot[]; name: string } | null>(null);
   const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
+  const [chronoSeconds, setChronoSeconds] = useState(0);
+
+  useEffect(() => {
+    if (world.missionStatus !== "active") return;
+    const id = setInterval(() => setChronoSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [world.missionStatus]);
   const pendingExitRef = useRef<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
