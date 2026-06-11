@@ -507,29 +507,29 @@ export function TheCallGame({
   }, [world.dangerLevel]);
 
   return (
-    <div className="storyline-themed flex h-screen flex-col bg-background text-foreground">
+    <div className="storyline-themed flex h-screen flex-col overflow-x-hidden bg-background text-foreground">
       <header className="border-b border-border bg-card/80 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-2 text-xs font-mono">
-          <div className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-y-2 px-4 py-2 text-xs font-mono">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <button
               onClick={() => requestExit("exit")}
-              className="mr-2 rounded border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
+              className="mr-1 shrink-0 rounded border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground"
               title={t("game.back_title", lang)}
             >
               ←
             </button>
             <span
-              className={`pulse-danger inline-block h-2 w-2 rounded-full ${
+              className={`pulse-danger inline-block h-2 w-2 shrink-0 rounded-full ${
                 world.dangerLevel >= 60 ? "bg-danger" : "bg-emerald-500"
               }`}
             />
             <span className="text-muted-foreground">CALL</span>
             <span className="font-semibold tabular-nums">{formatChrono(chronoSeconds)}</span>
-            <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
+            <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
               {mode}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Stat label={t("game.stress", lang)} value={world.playerStress} color="text-amber-400" />
             <Stat label={t("game.danger", lang)} value={world.dangerLevel} color={dangerColor} />
             <Stat label={t("game.bond", lang)} value={world.claireConfiance} color="text-claire" />
@@ -537,6 +537,7 @@ export function TheCallGame({
             <ThemeToggle />
           </div>
         </div>
+
         <div className="mx-auto max-w-2xl px-4 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
           {scene.title} ·{" "}
           {world.missionStatus === "active"
