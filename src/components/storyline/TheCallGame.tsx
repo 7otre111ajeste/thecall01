@@ -182,8 +182,8 @@ export function TheCallGame({
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
   const defaultSaveName = useCallback(
-    () => `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-    [scene.title, world.timeMinutes],
+    () => `${scene.title} · ${formatChrono(chronoSeconds)}`,
+    [scene.title, chronoSeconds],
   );
 
   const runPendingExit = useCallback(() => {
