@@ -15,13 +15,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "STORYLINE — Plateforme de jeux narratifs interactifs" },
+      { title: "MY STORYLINE — Histoires interactives" },
       {
         name: "description",
         content:
-          "STORYLINE — Plongez dans des histoires interactives en temps réel. Thriller, survie, drame. Vos choix changent tout.",
+          "MY STORYLINE — Plongez dans des histoires interactives en temps réel. Thriller, survie, drame. Vos choix changent tout.",
       },
-      { property: "og:title", content: "STORYLINE — Jeux narratifs interactifs" },
+      { property: "og:title", content: "MY STORYLINE — Histoires interactives" },
       {
         property: "og:description",
         content: "Une plateforme d'histoires immersives. Première histoire : THE CALL.",
