@@ -41,6 +41,12 @@ function formatGameTime(min: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+function formatChrono(totalSec: number): string {
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
 function uid(): string {
   return Math.random().toString(36).slice(2, 10);
 }
@@ -78,6 +84,13 @@ export function TheCallGame({
   const [overwritePicker, setOverwritePicker] = useState<{ saves: SaveSlot[]; name: string } | null>(null);
   const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
+  const [chronoSeconds, setChronoSeconds] = useState(0);
+
+  useEffect(() => {
+    if (world.missionStatus !== "active") return;
+    const id = setInterval(() => setChronoSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [world.missionStatus]);
   const pendingExitRef = useRef<null | "exit" | "back">(null);
   const enteredRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,8 +182,8 @@ export function TheCallGame({
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
   const defaultSaveName = useCallback(
-    () => `${scene.title} · ${formatGameTime(world.timeMinutes)}`,
-    [scene.title, world.timeMinutes],
+    () => `${scene.title} · ${formatChrono(chronoSeconds)}`,
+    [scene.title, chronoSeconds],
   );
 
   const runPendingExit = useCallback(() => {
@@ -274,6 +287,7 @@ export function TheCallGame({
 
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
+    setChronoSeconds((s) => s + minutes * 60);
     let newTotal = 0;
     setWorld((w) => {
       newTotal = w.timeMinutes + minutes;
@@ -477,7 +491,7 @@ export function TheCallGame({
               }`}
             />
             <span className="text-muted-foreground">CALL</span>
-            <span className="font-semibold">{formatGameTime(world.timeMinutes)}</span>
+            <span className="font-semibold tabular-nums">{formatChrono(chronoSeconds)}</span>
             <span className="ml-2 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
               {mode}
             </span>
