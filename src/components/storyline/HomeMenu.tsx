@@ -7,11 +7,15 @@ import {
   STORIES,
   type StoryModule,
 } from "@/lib/storyline/stories";
+import { useTheme } from "@/lib/theme";
 
 import { LangToggle } from "./LangToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void }) {
   const [lang] = useLang();
+  const [theme] = useTheme();
+  const isDark = theme === "dark";
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -22,25 +26,44 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-black px-6 py-10 text-white">
-      <div className="absolute right-5 top-5 z-10">
+    <div
+      className={`relative min-h-screen px-6 py-10 transition-colors ${
+        isDark ? "bg-black text-white" : "bg-[#f6f6f4] text-black"
+      }`}
+    >
+      <div className="absolute right-5 top-5 z-10 flex items-center gap-2">
         <LangToggle />
+        <ThemeToggle />
       </div>
 
       <header className="mx-auto mb-10 max-w-2xl text-center">
         <h1 className="text-4xl font-bold tracking-[0.25em]">MY STORYLINE</h1>
-        <p className="mt-2 font-mono text-[8px] uppercase tracking-[0.4em] text-white/25">
+        <p
+          className={`mt-2 font-mono text-[8px] uppercase tracking-[0.4em] ${
+            isDark ? "text-white/25" : "text-black/40"
+          }`}
+        >
           {t("menu.tagline", lang)}
         </p>
       </header>
 
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
         {STORIES.map((s) => (
-          <StoryCard key={s.id} story={s} lang={lang} onSelect={() => onSelect(s)} />
+          <StoryCard
+            key={s.id}
+            story={s}
+            lang={lang}
+            isDark={isDark}
+            onSelect={() => onSelect(s)}
+          />
         ))}
       </div>
 
-      <p className="mx-auto mt-12 max-w-2xl text-center font-mono text-[10px] uppercase tracking-widest text-white/30">
+      <p
+        className={`mx-auto mt-12 max-w-2xl text-center font-mono text-[10px] uppercase tracking-widest ${
+          isDark ? "text-white/30" : "text-black/40"
+        }`}
+      >
         {t("menu.footer", lang)}
       </p>
     </div>
@@ -50,10 +73,12 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
 function StoryCard({
   story,
   lang,
+  isDark,
   onSelect,
 }: {
   story: StoryModule;
   lang: "fr" | "en";
+  isDark: boolean;
   onSelect: () => void;
 }) {
   const locked = story.status === "locked";
@@ -61,10 +86,20 @@ function StoryCard({
   const tagline = lang === "en" ? story.taglineEn : story.tagline;
   const synopsis = lang === "en" ? story.synopsisEn : story.synopsis;
 
+  const cardCls = isDark
+    ? "border-white/10 bg-[#0a0a0a] hover:border-white/25 hover:bg-[#101010]"
+    : "border-black/10 bg-white hover:border-black/25 hover:bg-[#fafafa]";
+  const plays_cls = isDark ? "text-white/35" : "text-black/45";
+  const synopsis_cls = isDark ? "text-white/55" : "text-black/65";
+  const border_t_cls = isDark ? "border-white/5" : "border-black/5";
+  const arrow_cls = isDark
+    ? "text-white/30 group-hover:text-white/60"
+    : "text-black/30 group-hover:text-black/60";
+
   return (
     <button
       onClick={onSelect}
-      className={`group relative overflow-hidden rounded-lg border border-white/10 bg-[#0a0a0a] px-5 py-4 text-left transition-all hover:-translate-y-px hover:border-white/25 hover:bg-[#101010] ${
+      className={`group relative overflow-hidden rounded-lg border px-5 py-4 text-left transition-all hover:-translate-y-px ${cardCls} ${
         locked ? "opacity-80" : ""
       }`}
     >
@@ -86,17 +121,19 @@ function StoryCard({
         >
           {tagline}
         </div>
-        <span className="font-mono text-[9px] uppercase tracking-widest text-white/35">
+        <span className={`font-mono text-[9px] uppercase tracking-widest ${plays_cls}`}>
           {plays.toLocaleString(lang === "en" ? "en-US" : "fr-FR")} {t("menu.plays", lang)}
         </span>
       </div>
 
       <h3 className="mt-1.5 text-lg font-semibold tracking-[0.15em]">{story.title}</h3>
-      <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-white/55">{synopsis}</p>
+      <p className={`mt-1.5 line-clamp-2 text-[13px] leading-snug ${synopsis_cls}`}>
+        {synopsis}
+      </p>
 
-      <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2.5">
+      <div className={`mt-3 flex items-center justify-between border-t pt-2.5 ${border_t_cls}`}>
         {locked ? (
-          <span className="font-mono text-[9px] uppercase tracking-widest text-white/35">
+          <span className={`font-mono text-[9px] uppercase tracking-widest ${plays_cls}`}>
             🔒 {t("menu.locked", lang)}
           </span>
         ) : (
@@ -107,9 +144,7 @@ function StoryCard({
             ▶ {t("menu.available", lang)}
           </span>
         )}
-        <span className="font-mono text-[10px] text-white/30 transition group-hover:text-white/60">
-          →
-        </span>
+        <span className={`font-mono text-[10px] transition ${arrow_cls}`}>→</span>
       </div>
     </button>
   );
