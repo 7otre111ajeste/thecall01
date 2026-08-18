@@ -19,10 +19,12 @@ import {
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
+  loc,
   type Message,
   type Speaker,
   type WorldState,
 } from "@/lib/game/types";
+
 import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
 
