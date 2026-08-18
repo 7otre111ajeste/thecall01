@@ -514,7 +514,7 @@ export function TheCallGame({
       setTyping(null);
       setAwaitingAi(false);
     }
-  }, [freeText, awaitingAi, callClaire, scene.title, world, mode, lang, messages]);
+  }, [freeText, awaitingAi, callClaire, sceneTitle, world, mode, lang, messages]);
 
   const dangerColor = useMemo(() => {
     if (world.dangerLevel >= 75) return "text-danger";
