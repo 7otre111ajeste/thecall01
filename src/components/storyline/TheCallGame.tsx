@@ -419,7 +419,7 @@ export function TheCallGame({
       const res = await callClaire({
         data: {
           playerMessage: text,
-          sceneTitle: scene.title,
+          sceneTitle,
           dangerLevel: world.dangerLevel,
           ravisseursPresents: world.ravisseursPresents,
           claireLocation: world.claireLocation,
@@ -427,6 +427,9 @@ export function TheCallGame({
           lang,
           history,
           flags: world.flags,
+          playerName: world.playerName ?? "",
+          nameAsked: !!world.nameAsked,
+          exchanges: messages.filter((m) => m.speaker === "player").length + 1,
         },
       });
       setMessages((m) => [
@@ -446,10 +449,13 @@ export function TheCallGame({
       const nextWorld: WorldState = {
         ...world,
         flags: mergedFlags,
+        playerName: res.playerName || world.playerName,
+        nameAsked: world.nameAsked || res.askedName,
         claireConfiance: clamp(world.claireConfiance + (res.trustDelta ?? 0)),
         playerStress: clamp(world.playerStress + (res.stressDelta ?? 0)),
         dangerLevel: clamp(world.dangerLevel + (res.dangerDelta ?? 0)),
       };
+
 
       // Subtle hint (one at a time).
       const hint = pickHint(nextWorld, flagsAdded, lang);
