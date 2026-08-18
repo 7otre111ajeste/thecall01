@@ -134,9 +134,10 @@ export function TheCallGame({
           await sleep(delay);
           if (cancelled || enteredRef.current !== myToken) return;
         }
+        const beatText = loc(beat.text, langRef.current);
         setMessages((m) => {
           // dedupe: avoid double-append from strict-mode remount
-          if (m.some((x) => x.speaker === beat.speaker && x.text === beat.text)) {
+          if (m.some((x) => x.speaker === beat.speaker && x.text === beatText)) {
             return m;
           }
           return [
@@ -144,11 +145,12 @@ export function TheCallGame({
             {
               id: uid(),
               speaker: beat.speaker,
-              text: beat.text,
+              text: beatText,
               timestamp: world.timeMinutes,
             },
           ];
         });
+
       }
       if (cancelled || enteredRef.current !== myToken) return;
       setBeatsDone(true);
