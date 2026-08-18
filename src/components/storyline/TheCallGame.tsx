@@ -820,6 +820,8 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
 
 function Bubble({ message }: { message: Message }) {
   const { speaker, text } = message;
+  const [lang] = useLang();
+
 
   if (speaker === "system") {
     return (
