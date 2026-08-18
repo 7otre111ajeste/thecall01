@@ -48,6 +48,10 @@ export type WorldState = {
   flags: string[];
   // Hint IDs already shown (avoid repeating the same nudge).
   hintsShown: string[];
+  // Name the player gave to the character (asked naturally in-story).
+  playerName?: string;
+  // Whether the character already asked for the player's name.
+  nameAsked?: boolean;
 };
 
 export const initialWorldState: WorldState = {
@@ -60,4 +64,7 @@ export const initialWorldState: WorldState = {
   timeMinutes: 0,
   flags: [],
   hintsShown: [],
+  playerName: undefined,
+  nameAsked: false,
 };
+
