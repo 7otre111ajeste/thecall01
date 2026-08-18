@@ -60,6 +60,7 @@ export const STRINGS: Dict = {
   "mode.chaos": { fr: "Chaos", en: "Chaos" },
   "mode.comic": { fr: "Comic", en: "Comic" },
 
+  "game.masked": { fr: "masqué", en: "masked" },
   "game.stress": { fr: "STRESS", en: "STRESS" },
   "game.danger": { fr: "DANGER", en: "DANGER" },
   "game.bond": { fr: "LIEN", en: "BOND" },
