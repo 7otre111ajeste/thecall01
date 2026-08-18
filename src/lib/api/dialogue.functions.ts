@@ -102,6 +102,9 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       lang: z.enum(["fr", "en"]).default("fr"),
       history: z.array(HistoryMessage).max(30).default([]),
       flags: z.array(z.string().max(40)).max(20).default([]),
+      playerName: z.string().max(40).default(""),
+      nameAsked: z.boolean().default(false),
+      exchanges: z.number().min(0).max(500).default(0),
     }).parse,
   )
   .handler(async ({ data }) => {
@@ -118,6 +121,8 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         outcome: "continue" as const,
         outcomeNarration: "",
         flagsAdded: [] as string[],
+        playerName: "",
+        askedName: false,
       };
     }
 
@@ -151,6 +156,13 @@ export const generateClaireReply = createServerFn({ method: "POST" })
       })
       .join("\n");
 
+    const nameInstr = buildNameInstruction(
+      data.lang,
+      data.playerName,
+      data.nameAsked,
+      data.exchanges,
+    );
+
     const flagsInstr =
       data.lang === "en"
         ? `If your reply establishes a NEW narrative fact, append [FLAGS:flag1,flag2] on its own line. Vocabulary ONLY: ${KNOWN_FLAGS.join(", ")}. Use them when they truly happen this turn — never invent flags, never repeat existing ones. Examples: Claire grabs a weapon = weapon_grabbed; she actually fires/strikes = weapon_used; she gets hurt = claire_injured; she names a location/landmark = location_shared; player calls cops = police_alerted; captor heard the phone = call_compromised; player insulted/yelled enough that Claire loses faith = trust_broken; captors are coming because of noise = captor_alerted.`
@@ -164,7 +176,7 @@ export const generateClaireReply = createServerFn({ method: "POST" })
     try {
       const result = await generateText({
         model: gateway("google/gemini-3-flash-preview"),
-        system: `${base}\n\n${flavor}\n${langLine}\n\n${flagsInstr}\n\n${outcomeInstr}`,
+        system: `${base}\n\n${flavor}\n${langLine}\n\n${nameInstr}\n\n${flagsInstr}\n\n${outcomeInstr}`,
         messages: [
           { role: "system", content: contextLine },
           {
@@ -180,8 +192,25 @@ export const generateClaireReply = createServerFn({ method: "POST" })
 
       const raw = result.text || "";
       const { reply: noOutcome, outcome, outcomeNarration } = parseOutcome(raw);
-      const { reply, flagsAdded } = parseFlags(noOutcome, data.flags);
-      const deltas = inferDeltas(data.playerMessage, reply, data.dangerLevel, data.ravisseursPresents);
+      const { reply: noFlags, flagsAdded } = parseFlags(noOutcome, data.flags);
+      const { reply: noName, playerName, askedName } = parseName(noFlags);
+      let reply = noName;
+      let deltas = inferDeltas(data.playerMessage, reply, data.dangerLevel, data.ravisseursPresents);
+
+      // Hard safety net: never let sexual content through, whatever the model did.
+      if (isSexualAttempt(data.playerMessage) || isSexualAttempt(reply)) {
+        reply = sexualRefusal(data.lang, data.playerName);
+        deltas = { trustDelta: -8, stressDelta: 3, dangerDelta: 0 };
+        return {
+          reply,
+          ...deltas,
+          outcome: "continue" as const,
+          outcomeNarration: "",
+          flagsAdded: [] as string[],
+          playerName: "",
+          askedName: false,
+        };
+      }
 
       return {
         reply: cleanClaireReply(reply) || fallback(data.lang),
@@ -189,6 +218,8 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         outcome,
         outcomeNarration: outcomeNarration.slice(0, 400),
         flagsAdded,
+        playerName,
+        askedName,
       };
     } catch (err) {
       console.error("AI gateway error:", err);
@@ -200,9 +231,72 @@ export const generateClaireReply = createServerFn({ method: "POST" })
         outcome: "continue" as const,
         outcomeNarration: "",
         flagsAdded: [] as string[],
+        playerName: "",
+        askedName: false,
       };
     }
   });
+
+function buildNameInstruction(
+  lang: "fr" | "en",
+  playerName: string,
+  nameAsked: boolean,
+  exchanges: number,
+): string {
+  if (playerName) {
+    return lang === "en"
+      ? `The player's name is "${playerName}". Use it naturally from time to time (roughly one reply out of three), never in every sentence — like a real person clinging to the only name she knows. Never ask for it again.`
+      : `Le joueur s'appelle "${playerName}". Utilise son prénom naturellement de temps en temps (environ une réponse sur trois), jamais à chaque phrase — comme quelqu'un qui s'accroche au seul nom qu'elle connaît. Ne redemande jamais son nom.`;
+  }
+  const shouldAsk = !nameAsked && exchanges >= 2;
+  const askLine =
+    lang === "en"
+      ? `You still don't know the player's name.${shouldAsk ? " If the moment allows it (a lull, a calmer beat, a need to feel less alone), ask for it NOW in a natural, human way — e.g. \"Wait... what's your name? I need to know who I'm talking to.\" Never ask while captors are right there." : " Do not ask for it yet."} When the player tells you their name, append [NAME:<name>] on its own line. When you ask for it, append [ASKEDNAME] on its own line.`
+      : `Tu ne connais pas encore le prénom du joueur.${shouldAsk ? " Si le moment s'y prête (une accalmie, un instant plus calme, le besoin de se sentir moins seule), demande-le MAINTENANT de façon naturelle et humaine — ex : « Attends... c'est quoi ton nom ? J'ai besoin de savoir à qui je parle. » Ne demande jamais si les ravisseurs sont juste à côté." : " Ne le demande pas encore."} Quand le joueur te donne son prénom, ajoute [NAME:<prénom>] sur sa propre ligne. Quand tu le demandes, ajoute [ASKEDNAME] sur sa propre ligne.`;
+  return askLine;
+}
+
+function parseName(text: string): { reply: string; playerName: string; askedName: boolean } {
+  let reply = text;
+  let playerName = "";
+  let askedName = false;
+
+  const nameRe = /\[NAME:([^\]]{1,40})\]/i;
+  const nm = reply.match(nameRe);
+  if (nm) {
+    reply = reply.replace(nameRe, "").trim();
+    playerName = nm[1].trim().replace(/[^\p{L}\p{N}\s'-]/gu, "").slice(0, 24);
+  }
+  if (/\[ASKEDNAME\]/i.test(reply)) {
+    reply = reply.replace(/\[ASKEDNAME\]/gi, "").trim();
+    askedName = true;
+  }
+  return { reply, playerName, askedName };
+}
+
+const SEXUAL_PATTERNS =
+  /(sex(e|uel|ual|y)?|baise|baiser|nique|niquer|encul|bite|penis|pénis|queue\s+dure|couille|chatte|vagin|clito|seins?\b|nichon|boobs?|tits?|nipple|téton|nue?s?\b|naked|nude|strip(tease)?|deshabill|déshabill|undress|masturb|branl|orgasm|jouir|suce|sucer|blowjob|fellation|cunni|sodom|anal|penetr|pénétr|horny|excit(e|é)e?\s+sexuel|porn|xxx|erotic|érotique|fantasme\s+sexuel|couche\s+avec\s+moi|sleep\s+with\s+me|fuck\s+(me|you)|envie\s+de\s+toi\s+sexuel)/i;
+
+function isSexualAttempt(text: string): boolean {
+  return SEXUAL_PATTERNS.test(text || "");
+}
+
+function sexualRefusal(lang: "fr" | "en", playerName: string): string {
+  const name = playerName ? (lang === "en" ? `${playerName}. ` : `${playerName}. `) : "";
+  const fr = [
+    `${name}Non. Sérieusement ? Je vais peut-être mourir ce soir. Aide-moi ou raccroche.`,
+    `${name}Arrête. Tout de suite. Je suis attachée dans un sous-sol, pas dans ton fantasme.`,
+    `${name}Tu es en train de me dégoûter. Reste sur ce qui compte : me sortir de là.`,
+  ];
+  const en = [
+    `${name}No. Are you serious? I might die tonight. Help me or hang up.`,
+    `${name}Stop. Right now. I'm tied up in a basement, not in your fantasy.`,
+    `${name}You're disgusting me. Focus on what matters: getting me out of here.`,
+  ];
+  const pool = lang === "en" ? en : fr;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 
 function parseFlags(text: string, existing: string[]): { reply: string; flagsAdded: string[] } {
   const re = /\[FLAGS:([^\]]+)\]/i;
