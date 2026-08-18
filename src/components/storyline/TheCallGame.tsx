@@ -542,7 +542,7 @@ export function TheCallGame({
             <span className="text-muted-foreground">CALL</span>
             <span className="font-semibold tabular-nums">{formatChrono(chronoSeconds)}</span>
             <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
-              {mode}
+              {t(`mode.${mode}`, lang)}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -698,7 +698,7 @@ export function TheCallGame({
                 >
                   <div className="truncate font-semibold">{s.name}</div>
                   <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {s.mode} ·{" "}
+                    {t(`mode.${s.mode}`, lang)} ·{" "}
                     {new Date(s.savedAt).toLocaleString(
                       lang === "en" ? "en-US" : "fr-FR",
                       { dateStyle: "short", timeStyle: "short" },
@@ -851,7 +851,7 @@ function Bubble({ message }: { message: Message }) {
       <div className="msg-enter flex justify-start">
         <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-unknown/40 bg-unknown/10 px-4 py-2 text-sm text-unknown">
           <div className="mb-1 text-[10px] uppercase tracking-widest opacity-70">
-            ??? · masqué
+            ??? · {t("game.masked", lang)}
           </div>
           {text}
         </div>
