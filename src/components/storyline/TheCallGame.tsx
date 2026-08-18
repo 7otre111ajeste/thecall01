@@ -549,7 +549,7 @@ export function TheCallGame({
         </div>
 
         <div className="mx-auto max-w-2xl px-4 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-          {scene.title} ·{" "}
+          {sceneTitle} ·{" "}
           {world.missionStatus === "active"
             ? t("game.mission_active", lang)
             : world.missionStatus === "failed"
@@ -614,7 +614,7 @@ export function TheCallGame({
                       onClick={() => handleChoice(c.id)}
                       className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
                     >
-                      {c.label}
+                      {loc(c.label, lang)}
                     </button>
                   ))}
               </div>
