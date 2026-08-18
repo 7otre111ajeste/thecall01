@@ -1,5 +1,12 @@
 export type Speaker = "claire" | "unknown" | "system" | "player" | "narrator";
 
+/** Localized string pair. */
+export type Loc = { fr: string; en: string };
+
+export function loc(value: Loc | string, lang: "fr" | "en"): string {
+  return typeof value === "string" ? value : value[lang];
+}
+
 export type Message = {
   id: string;
   speaker: Speaker;
@@ -9,7 +16,7 @@ export type Message = {
 
 export type Choice = {
   id: string;
-  label: string;
+  label: Loc;
   nextScene: string;
   effects?: Partial<WorldState>;
   requiresFlag?: string;
@@ -18,14 +25,15 @@ export type Choice = {
 
 export type Scene = {
   id: string;
-  title: string;
-  beats: Array<{ speaker: Speaker; text: string; delayMs?: number }>;
+  title: Loc;
+  beats: Array<{ speaker: Speaker; text: Loc; delayMs?: number }>;
   choices: Choice[];
   autoAdvance?: { nextScene: string; delayMs: number };
   allowFreeText?: boolean;
   onEnter?: Partial<WorldState>;
   allowAdvanceTime?: boolean;
 };
+
 
 export type WorldState = {
   claireLocation: "unknown" | "basement" | "moving" | "rescued" | "lost";
