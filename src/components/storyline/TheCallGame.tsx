@@ -19,10 +19,12 @@ import {
 import { SCENES, START_SCENE } from "@/lib/game/scenes";
 import {
   initialWorldState,
+  loc,
   type Message,
   type Speaker,
   type WorldState,
 } from "@/lib/game/types";
+
 import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
 
@@ -98,8 +100,12 @@ export function TheCallGame({
   const advancePressesRef = useRef<number[]>([]);
   const usedReactionsRef = useRef<Set<string>>(new Set());
   const callClaire = useServerFn(generateClaireReply);
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   const scene = SCENES[sceneId];
+  const sceneTitle = loc(scene.title, lang);
+
 
   useEffect(() => {
     setBeatsDone(skipNextBeatsRef.current);
@@ -132,9 +138,10 @@ export function TheCallGame({
           await sleep(delay);
           if (cancelled || enteredRef.current !== myToken) return;
         }
+        const beatText = loc(beat.text, langRef.current);
         setMessages((m) => {
           // dedupe: avoid double-append from strict-mode remount
-          if (m.some((x) => x.speaker === beat.speaker && x.text === beat.text)) {
+          if (m.some((x) => x.speaker === beat.speaker && x.text === beatText)) {
             return m;
           }
           return [
@@ -142,11 +149,12 @@ export function TheCallGame({
             {
               id: uid(),
               speaker: beat.speaker,
-              text: beat.text,
+              text: beatText,
               timestamp: world.timeMinutes,
             },
           ];
         });
+
       }
       if (cancelled || enteredRef.current !== myToken) return;
       setBeatsDone(true);
@@ -184,9 +192,10 @@ export function TheCallGame({
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
   const defaultSaveName = useCallback(
-    () => `${scene.title} · ${formatChrono(chronoSeconds)}`,
-    [scene.title, chronoSeconds],
+    () => `${sceneTitle} · ${formatChrono(chronoSeconds)}`,
+    [sceneTitle, chronoSeconds],
   );
+
 
   const runPendingExit = useCallback(() => {
     const target = pendingExitRef.current;
@@ -275,7 +284,7 @@ export function TheCallGame({
         {
           id: uid(),
           speaker: "player",
-          text: choice.label,
+          text: loc(choice.label, lang),
           timestamp: world.timeMinutes,
         },
       ]);
@@ -284,8 +293,9 @@ export function TheCallGame({
       }
       setTimeout(() => setSceneId(choice.nextScene), 400);
     },
-    [scene, world.timeMinutes],
+    [scene, world.timeMinutes, lang],
   );
+
 
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
@@ -409,7 +419,7 @@ export function TheCallGame({
       const res = await callClaire({
         data: {
           playerMessage: text,
-          sceneTitle: scene.title,
+          sceneTitle,
           dangerLevel: world.dangerLevel,
           ravisseursPresents: world.ravisseursPresents,
           claireLocation: world.claireLocation,
@@ -417,6 +427,9 @@ export function TheCallGame({
           lang,
           history,
           flags: world.flags,
+          playerName: world.playerName ?? "",
+          nameAsked: !!world.nameAsked,
+          exchanges: messages.filter((m) => m.speaker === "player").length + 1,
         },
       });
       setMessages((m) => [
@@ -436,10 +449,13 @@ export function TheCallGame({
       const nextWorld: WorldState = {
         ...world,
         flags: mergedFlags,
+        playerName: res.playerName || world.playerName,
+        nameAsked: world.nameAsked || res.askedName,
         claireConfiance: clamp(world.claireConfiance + (res.trustDelta ?? 0)),
         playerStress: clamp(world.playerStress + (res.stressDelta ?? 0)),
         dangerLevel: clamp(world.dangerLevel + (res.dangerDelta ?? 0)),
       };
+
 
       // Subtle hint (one at a time).
       const hint = pickHint(nextWorld, flagsAdded, lang);
@@ -498,7 +514,7 @@ export function TheCallGame({
       setTyping(null);
       setAwaitingAi(false);
     }
-  }, [freeText, awaitingAi, callClaire, scene.title, world, mode, lang, messages]);
+  }, [freeText, awaitingAi, callClaire, sceneTitle, world, mode, lang, messages]);
 
   const dangerColor = useMemo(() => {
     if (world.dangerLevel >= 75) return "text-danger";
@@ -539,7 +555,7 @@ export function TheCallGame({
         </div>
 
         <div className="mx-auto max-w-2xl px-4 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-          {scene.title} ·{" "}
+          {sceneTitle} ·{" "}
           {world.missionStatus === "active"
             ? t("game.mission_active", lang)
             : world.missionStatus === "failed"
@@ -604,7 +620,7 @@ export function TheCallGame({
                       onClick={() => handleChoice(c.id)}
                       className="rounded-md border border-border bg-secondary px-3 py-2 text-left text-sm text-secondary-foreground transition hover:border-primary hover:bg-accent"
                     >
-                      {c.label}
+                      {loc(c.label, lang)}
                     </button>
                   ))}
               </div>
