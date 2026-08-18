@@ -100,8 +100,12 @@ export function TheCallGame({
   const advancePressesRef = useRef<number[]>([]);
   const usedReactionsRef = useRef<Set<string>>(new Set());
   const callClaire = useServerFn(generateClaireReply);
+  const langRef = useRef(lang);
+  langRef.current = lang;
 
   const scene = SCENES[sceneId];
+  const sceneTitle = loc(scene.title, lang);
+
 
   useEffect(() => {
     setBeatsDone(skipNextBeatsRef.current);
@@ -188,9 +192,10 @@ export function TheCallGame({
   }, [world, sceneId, messages, mode, storyId, beatsDone]);
 
   const defaultSaveName = useCallback(
-    () => `${scene.title} · ${formatChrono(chronoSeconds)}`,
-    [scene.title, chronoSeconds],
+    () => `${sceneTitle} · ${formatChrono(chronoSeconds)}`,
+    [sceneTitle, chronoSeconds],
   );
+
 
   const runPendingExit = useCallback(() => {
     const target = pendingExitRef.current;
@@ -279,7 +284,7 @@ export function TheCallGame({
         {
           id: uid(),
           speaker: "player",
-          text: choice.label,
+          text: loc(choice.label, lang),
           timestamp: world.timeMinutes,
         },
       ]);
@@ -288,8 +293,9 @@ export function TheCallGame({
       }
       setTimeout(() => setSceneId(choice.nextScene), 400);
     },
-    [scene, world.timeMinutes],
+    [scene, world.timeMinutes, lang],
   );
+
 
   const handleAdvanceTime = useCallback((minutes: number) => {
     if (awaitingAi) return;
