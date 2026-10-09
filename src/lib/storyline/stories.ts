@@ -82,8 +82,18 @@ export const NARRATIVE_MODE_LABELS: Record<NarrativeMode, string> = {
   comic: "Comic",
 };
 
+const FAKE_SEEDS: Record<string, number> = { thecall: 12847 };
+
 export function getPlayCount(storyId: string): number {
   if (typeof window === "undefined") return 0;
+  const seededKey = `storyline.plays.${storyId}.seeded`;
+  if (window.localStorage.getItem(seededKey)) {
+    // Remove the old fake counter seeded by earlier versions.
+    const cur = parseInt(window.localStorage.getItem(`storyline.plays.${storyId}`) ?? "0", 10) || 0;
+    const real = Math.max(0, cur - (FAKE_SEEDS[storyId] ?? 0));
+    window.localStorage.setItem(`storyline.plays.${storyId}`, String(real));
+    window.localStorage.removeItem(seededKey);
+  }
   const v = window.localStorage.getItem(`storyline.plays.${storyId}`);
   return v ? parseInt(v, 10) || 0 : 0;
 }
@@ -93,21 +103,4 @@ export function incrementPlayCount(storyId: string): number {
   const n = getPlayCount(storyId) + 1;
   window.localStorage.setItem(`storyline.plays.${storyId}`, String(n));
   return n;
-}
-
-export function seedPlayCounts() {
-  if (typeof window === "undefined") return;
-  const seeds: Record<string, number> = {
-    thecall: 12847,
-    survival: 0,
-    business: 0,
-  };
-  for (const [id, base] of Object.entries(seeds)) {
-    const key = `storyline.plays.${id}.seeded`;
-    if (!window.localStorage.getItem(key)) {
-      const current = getPlayCount(id);
-      window.localStorage.setItem(`storyline.plays.${id}`, String(current + base));
-      window.localStorage.setItem(key, "1");
-    }
-  }
 }
