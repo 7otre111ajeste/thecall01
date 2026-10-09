@@ -13,11 +13,17 @@ export type StoryModule = {
   theme: StoryTheme;
   accent: string;
   modes: NarrativeMode[];
+  warning: string;
+  warningEn: string;
 };
 
 export const STORIES: StoryModule[] = [
   {
     id: "thecall",
+    warning:
+      "Tout est inventé. THE CALL parle d'enlèvement, de danger et de peur : ce n'est pas pour tout le monde.",
+    warningEn:
+      "Everything is made up. THE CALL deals with kidnapping, danger and fear: it's not for everyone.",
     title: "THE CALL",
     tagline: "Thriller · Temps réel",
     taglineEn: "Thriller · Real time",
@@ -32,6 +38,10 @@ export const STORIES: StoryModule[] = [
   },
   {
     id: "survival",
+    warning:
+      "Tout est inventé. SURVIVAL CRASH parle d'accident, de blessures et de survie : ce n'est pas pour tout le monde.",
+    warningEn:
+      "Everything is made up. SURVIVAL CRASH deals with a crash, injuries and survival: it's not for everyone.",
     title: "SURVIVAL CRASH",
     tagline: "Survie · Nature hostile",
     taglineEn: "Survival · Hostile wild",
@@ -46,6 +56,10 @@ export const STORIES: StoryModule[] = [
   },
   {
     id: "business",
+    warning:
+      "Tout est inventé. BUSINESS EMPIRE parle de pouvoir, de trahison et d'argent : aucun conseil financier réel.",
+    warningEn:
+      "Everything is made up. BUSINESS EMPIRE deals with power, betrayal and money: no real financial advice.",
     title: "BUSINESS EMPIRE",
     tagline: "Corporate · Pouvoir & trahison",
     taglineEn: "Corporate · Power & betrayal",
@@ -68,8 +82,18 @@ export const NARRATIVE_MODE_LABELS: Record<NarrativeMode, string> = {
   comic: "Comic",
 };
 
+const FAKE_SEEDS: Record<string, number> = { thecall: 12847 };
+
 export function getPlayCount(storyId: string): number {
   if (typeof window === "undefined") return 0;
+  const seededKey = `storyline.plays.${storyId}.seeded`;
+  if (window.localStorage.getItem(seededKey)) {
+    // Remove the old fake counter seeded by earlier versions.
+    const cur = parseInt(window.localStorage.getItem(`storyline.plays.${storyId}`) ?? "0", 10) || 0;
+    const real = Math.max(0, cur - (FAKE_SEEDS[storyId] ?? 0));
+    window.localStorage.setItem(`storyline.plays.${storyId}`, String(real));
+    window.localStorage.removeItem(seededKey);
+  }
   const v = window.localStorage.getItem(`storyline.plays.${storyId}`);
   return v ? parseInt(v, 10) || 0 : 0;
 }
@@ -79,21 +103,4 @@ export function incrementPlayCount(storyId: string): number {
   const n = getPlayCount(storyId) + 1;
   window.localStorage.setItem(`storyline.plays.${storyId}`, String(n));
   return n;
-}
-
-export function seedPlayCounts() {
-  if (typeof window === "undefined") return;
-  const seeds: Record<string, number> = {
-    thecall: 12847,
-    survival: 0,
-    business: 0,
-  };
-  for (const [id, base] of Object.entries(seeds)) {
-    const key = `storyline.plays.${id}.seeded`;
-    if (!window.localStorage.getItem(key)) {
-      const current = getPlayCount(id);
-      window.localStorage.setItem(`storyline.plays.${id}`, String(current + base));
-      window.localStorage.setItem(key, "1");
-    }
-  }
 }

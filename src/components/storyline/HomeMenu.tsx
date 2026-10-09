@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { t, useLang } from "@/lib/i18n";
 import {
   getPlayCount,
-  seedPlayCounts,
   STORIES,
   type StoryModule,
 } from "@/lib/storyline/stories";
@@ -12,14 +11,19 @@ import { useTheme } from "@/lib/theme";
 import { LangToggle } from "./LangToggle";
 import { ThemeToggle } from "./ThemeToggle";
 
-export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void }) {
+export function HomeMenu({
+  onSelect,
+  onRules,
+}: {
+  onSelect: (story: StoryModule) => void;
+  onRules: () => void;
+}) {
   const [lang] = useLang();
   const [theme] = useTheme();
   const isDark = theme === "dark";
   const [, setTick] = useState(0);
 
   useEffect(() => {
-    seedPlayCounts();
     setTick((t) => t + 1);
     const i = setInterval(() => setTick((t) => t + 1), 4000);
     return () => clearInterval(i);
@@ -59,8 +63,19 @@ export function HomeMenu({ onSelect }: { onSelect: (story: StoryModule) => void 
         ))}
       </div>
 
+      <div className="mx-auto mt-12 max-w-2xl text-center">
+        <button
+          onClick={onRules}
+          className={`text-[11px] underline underline-offset-4 ${
+            isDark ? "text-white/50 hover:text-white" : "text-black/50 hover:text-black"
+          }`}
+        >
+          ⚖️ {lang === "en" ? "Rules & terms" : "Règles & conditions"}
+        </button>
+      </div>
+
       <p
-        className={`mx-auto mt-12 max-w-2xl text-center font-mono text-[10px] uppercase tracking-widest ${
+        className={`mx-auto mt-4 max-w-2xl whitespace-pre-line text-center font-mono text-[10px] uppercase tracking-widest ${
           isDark ? "text-white/30" : "text-black/40"
         }`}
       >
@@ -127,9 +142,11 @@ function StoryCard({
         >
           {tagline}
         </div>
-        <span className={`font-mono text-[9px] uppercase tracking-widest ${plays_cls}`}>
-          {plays.toLocaleString(lang === "en" ? "en-US" : "fr-FR")} {t("menu.plays", lang)}
-        </span>
+        {plays > 0 && (
+          <span className={`font-mono text-[9px] uppercase tracking-widest ${plays_cls}`}>
+            {plays.toLocaleString(lang === "en" ? "en-US" : "fr-FR")} {t("menu.plays", lang)}
+          </span>
+        )}
       </div>
 
       <h3 className="mt-1.5 text-lg font-semibold tracking-[0.15em]">{story.title}</h3>
