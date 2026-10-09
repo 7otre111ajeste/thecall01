@@ -29,7 +29,9 @@ import { t, useLang } from "@/lib/i18n";
 import type { NarrativeMode } from "@/lib/storyline/stories";
 
 import { LangToggle } from "./LangToggle";
+import { PlaytimePill, ReportModal, TimeModal } from "./GameExtras";
 import { ThemeToggle } from "./ThemeToggle";
+import { consume, getPlaytime, totalLeft } from "@/lib/storyline/playtime";
 
 const TIME_OPTIONS = [
   { label: "+1 min", minutes: 1 },
@@ -87,6 +89,10 @@ export function TheCallGame({
   const [namePrompt, setNamePrompt] = useState<string | null>(null);
   const [exitPrompt, setExitPrompt] = useState<null | "exit" | "back">(null);
   const [chronoSeconds, setChronoSeconds] = useState(0);
+  const [timeModal, setTimeModal] = useState<null | "open" | "forced">(null);
+  const [aiIds, setAiIds] = useState<Set<string>>(() => new Set());
+  const [reportedIds, setReportedIds] = useState<Set<string>>(() => new Set());
+  const [reporting, setReporting] = useState<Message | null>(null);
 
   useEffect(() => {
     if (world.missionStatus !== "active") return;
@@ -432,10 +438,12 @@ export function TheCallGame({
           exchanges: messages.filter((m) => m.speaker === "player").length + 1,
         },
       });
+      const aiMsgId = uid();
+      setAiIds((prev) => new Set(prev).add(aiMsgId));
       setMessages((m) => [
         ...m,
         {
-          id: uid(),
+          id: aiMsgId,
           speaker: "claire",
           text: res.reply,
           timestamp: world.timeMinutes,
@@ -522,6 +530,23 @@ export function TheCallGame({
     return "text-emerald-400";
   }, [world.dangerLevel]);
 
+  const anyModal =
+    !!timeModal || !!reporting || !!exitPrompt || namePrompt !== null || !!overwritePicker;
+  useEffect(() => {
+    if (world.missionStatus !== "active") return;
+    if (totalLeft(getPlaytime()) <= 0) {
+      setTimeModal("forced");
+      return;
+    }
+    if (anyModal || awaitingAi) return;
+    const id = setInterval(() => {
+      if (document.hidden) return;
+      consume(1);
+      if (totalLeft(getPlaytime()) <= 0) setTimeModal("forced");
+    }, 1000);
+    return () => clearInterval(id);
+  }, [world.missionStatus, anyModal, awaitingAi]);
+
   return (
     <div className="storyline-themed flex h-screen flex-col overflow-x-hidden bg-background text-foreground">
       <header className="border-b border-border bg-card/80 backdrop-blur">
@@ -541,6 +566,7 @@ export function TheCallGame({
             />
             <span className="text-muted-foreground">CALL</span>
             <span className="font-semibold tabular-nums">{formatChrono(chronoSeconds)}</span>
+            <PlaytimePill onClick={() => setTimeModal("open")} />
             <span className="ml-1 rounded bg-secondary px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-muted-foreground">
               {t(`mode.${mode}`, lang)}
             </span>
@@ -569,7 +595,20 @@ export function TheCallGame({
         className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-2 overflow-y-auto px-4 py-4"
       >
         {messages.map((m) => (
-          <Bubble key={m.id} message={m} />
+          <div key={m.id}>
+            <Bubble message={m} />
+            {aiIds.has(m.id) && (
+              <button
+                onClick={() => !reportedIds.has(m.id) && setReporting(m)}
+                disabled={reportedIds.has(m.id)}
+                className="ml-2 mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                {reportedIds.has(m.id)
+                  ? lang === "en" ? "✓ Reported" : "✓ Signalé"
+                  : lang === "en" ? "⚑ Report" : "⚑ Signaler"}
+              </button>
+            )}
+          </div>
         ))}
         {typing && <TypingBubble speaker={typing} />}
       </div>
@@ -676,6 +715,27 @@ export function TheCallGame({
           )}
         </div>
       </footer>
+
+      {timeModal && (
+        <TimeModal
+          forced={timeModal === "forced"}
+          onClose={() => {
+            if (totalLeft(getPlaytime()) > 0) setTimeModal(null);
+          }}
+          onQuit={() => {
+            setTimeModal(null);
+            requestExit("exit");
+          }}
+        />
+      )}
+
+      {reporting && (
+        <ReportModal
+          text={reporting.text}
+          onClose={() => setReporting(null)}
+          onSent={() => setReportedIds((prev) => new Set(prev).add(reporting.id))}
+        />
+      )}
 
       {overwritePicker && (
         <div
