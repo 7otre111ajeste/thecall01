@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { Disclaimer } from "@/components/storyline/Disclaimer";
 import { HomeMenu } from "@/components/storyline/HomeMenu";
 import { Opening } from "@/components/storyline/Opening";
 import { StoryIntro } from "@/components/storyline/StoryIntro";
 import { TheCallGame } from "@/components/storyline/TheCallGame";
 import type { SaveSlot } from "@/lib/game/saves";
+import { accept, hasAccepted } from "@/lib/storyline/disclaimer";
 import {
   incrementPlayCount,
   type NarrativeMode,
@@ -34,6 +36,8 @@ export const Route = createFileRoute("/")({
 type Stage =
   | { kind: "opening" }
   | { kind: "home" }
+  | { kind: "rules" }
+  | { kind: "disclaimer"; story: StoryModule }
   | { kind: "intro"; story: StoryModule }
   | {
       kind: "playing";
@@ -50,7 +54,38 @@ function StorylineApp() {
   }
 
   if (stage.kind === "home") {
-    return <HomeMenu onSelect={(story) => setStage({ kind: "intro", story })} />;
+    return (
+      <HomeMenu
+        onSelect={(story) =>
+          setStage(
+            story.status === "active" && !hasAccepted(story.id)
+              ? { kind: "disclaimer", story }
+              : { kind: "intro", story },
+          )
+        }
+        onRules={() => setStage({ kind: "rules" })}
+      />
+    );
+  }
+
+  if (stage.kind === "rules") {
+    return (
+      <Disclaimer story={null} accent="#e0392b" readOnly onBack={() => setStage({ kind: "home" })} />
+    );
+  }
+
+  if (stage.kind === "disclaimer") {
+    return (
+      <Disclaimer
+        story={stage.story}
+        accent={stage.story.accent}
+        onBack={() => setStage({ kind: "home" })}
+        onAccept={() => {
+          accept(stage.story.id);
+          setStage({ kind: "intro", story: stage.story });
+        }}
+      />
+    );
   }
 
   if (stage.kind === "intro") {

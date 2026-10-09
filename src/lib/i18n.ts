@@ -32,12 +32,12 @@ type Dict = Record<string, { fr: string; en: string }>;
 export const STRINGS: Dict = {
   "menu.tagline": { fr: "Vos choix. Votre histoire.", en: "Your choices. Your story." },
   "menu.footer": {
-    fr: "Plus d'histoires bientôt · MY STORYLINE v0.1\nBy 7otre111ajeste",
-    en: "More stories coming soon · MY STORYLINE v0.1\nBy 7otre111ajeste",
+    fr: "Plus d'histoires bientôt · MY STORYLINE v1.0\nBy 7otre111ajeste",
+    en: "More stories coming soon · MY STORYLINE v1.0\nBy 7otre111ajeste",
   },
   "menu.available": { fr: "Disponible", en: "Available" },
   "menu.locked": { fr: "Bientôt", en: "Soon" },
-  "menu.plays": { fr: "parties", en: "plays" },
+  "menu.plays": { fr: "parties jouées", en: "games played" },
 
   "intro.ready": { fr: "Êtes-vous prêt à répondre ?", en: "Are you ready to answer?" },
   "intro.start": { fr: "Commencer", en: "Start" },
