@@ -13,11 +13,17 @@ export type StoryModule = {
   theme: StoryTheme;
   accent: string;
   modes: NarrativeMode[];
+  warning: string;
+  warningEn: string;
 };
 
 export const STORIES: StoryModule[] = [
   {
     id: "thecall",
+    warning:
+      "Tout est inventé. THE CALL parle d'enlèvement, de danger et de peur : ce n'est pas pour tout le monde.",
+    warningEn:
+      "Everything is made up. THE CALL deals with kidnapping, danger and fear: it's not for everyone.",
     title: "THE CALL",
     tagline: "Thriller · Temps réel",
     taglineEn: "Thriller · Real time",
@@ -32,6 +38,10 @@ export const STORIES: StoryModule[] = [
   },
   {
     id: "survival",
+    warning:
+      "Tout est inventé. SURVIVAL CRASH parle d'accident, de blessures et de survie : ce n'est pas pour tout le monde.",
+    warningEn:
+      "Everything is made up. SURVIVAL CRASH deals with a crash, injuries and survival: it's not for everyone.",
     title: "SURVIVAL CRASH",
     tagline: "Survie · Nature hostile",
     taglineEn: "Survival · Hostile wild",
@@ -46,6 +56,10 @@ export const STORIES: StoryModule[] = [
   },
   {
     id: "business",
+    warning:
+      "Tout est inventé. BUSINESS EMPIRE parle de pouvoir, de trahison et d'argent : aucun conseil financier réel.",
+    warningEn:
+      "Everything is made up. BUSINESS EMPIRE deals with power, betrayal and money: no real financial advice.",
     title: "BUSINESS EMPIRE",
     tagline: "Corporate · Pouvoir & trahison",
     taglineEn: "Corporate · Power & betrayal",
